@@ -17,17 +17,15 @@
 
 package wgextender.features.claimcommand;
 
-import java.math.BigInteger;
-
-import org.bukkit.entity.Player;
-
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
-
+import org.bukkit.entity.Player;
 import wgextender.Config;
 import wgextender.VaultIntegration;
 import wgextender.utils.WEUtils;
+
+import java.math.BigInteger;
 
 public class BlockLimits {
 
@@ -61,8 +59,8 @@ public class BlockLimits {
 			int maxblocks = 0;
 			for (String pgroup : pgroups) {
 				pgroup = pgroup.toLowerCase();
-				if (config.claimBlockLimins.containsKey(pgroup)) {
-					maxblocks = Math.max(maxblocks, config.claimBlockLimins.get(pgroup));
+				if (config.claimBlockLimits.containsKey(pgroup)) {
+					maxblocks = Math.max(maxblocks, config.claimBlockLimits.get(pgroup));
 				}
 			}
 			BigInteger maxblocksi = BigInteger.valueOf(maxblocks);

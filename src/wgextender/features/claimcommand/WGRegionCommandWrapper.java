@@ -17,32 +17,28 @@
 
 package wgextender.features.claimcommand;
 
+import com.sk89q.minecraft.util.commands.CommandException;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import com.sk89q.minecraft.util.commands.CommandException;
-
 import wgextender.Config;
 import wgextender.features.claimcommand.BlockLimits.ProcessedClaimInfo;
 import wgextender.utils.CommandUtils;
 import wgextender.utils.WEUtils;
 import wgextender.utils.WGRegionUtils;
 
-@SuppressWarnings("deprecation")
 public class WGRegionCommandWrapper extends Command {
 
-	public static void inject(Config config) throws IllegalAccessException {
+	public static void inject(Config config) {
 		WGRegionCommandWrapper wrapper = new WGRegionCommandWrapper(config, CommandUtils.getCommands().get("region"));
-		CommandUtils.replaceComamnd(wrapper.originalcommand, wrapper);
+		CommandUtils.replaceCommand(wrapper.originalcommand, wrapper);
 	}
 
-	public static void uninject() throws IllegalAccessException {
+	public static void uninject() {
 		WGRegionCommandWrapper wrapper = (WGRegionCommandWrapper) CommandUtils.getCommands().get("region");
-		CommandUtils.replaceComamnd(wrapper, wrapper.originalcommand);
+		CommandUtils.replaceCommand(wrapper, wrapper.originalcommand);
 	}
-
 
 	protected final Config config;
 	protected final Command originalcommand;
@@ -57,9 +53,8 @@ public class WGRegionCommandWrapper extends Command {
 
 	@Override
 	public boolean execute(CommandSender sender, String label, String[] args) {
-		if ((sender instanceof Player) && (args.length >= 2) && args[0].equalsIgnoreCase("claim")) {
-			Player player = (Player) sender;
-			String regionname = args[1];
+		if ((sender instanceof Player player) && (args.length >= 2) && args[0].equalsIgnoreCase("claim")) {
+            String regionname = args[1];
 			if (config.claimExpandSelectionVertical) {
 				boolean result = WEUtils.expandVert((Player) sender);
 				if (result) {

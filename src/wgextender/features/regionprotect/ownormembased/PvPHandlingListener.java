@@ -1,19 +1,5 @@
 package wgextender.features.regionprotect.ownormembased;
 
-import java.util.Arrays;
-import java.util.List;
-
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-import org.bukkit.event.Event.Result;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
@@ -27,17 +13,29 @@ import com.sk89q.worldguard.bukkit.util.Entities;
 import com.sk89q.worldguard.bukkit.util.Events;
 import com.sk89q.worldguard.bukkit.util.InteropUtils;
 import com.sk89q.worldguard.domains.Association;
-import com.sk89q.worldguard.protection.DelayedRegionOverlapAssociation;
 import com.sk89q.worldguard.protection.association.Associables;
+import com.sk89q.worldguard.protection.association.DelayedRegionOverlapAssociation;
 import com.sk89q.worldguard.protection.association.RegionAssociable;
 import com.sk89q.worldguard.protection.flags.Flags;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.StateFlag.State;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
-
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Event.Result;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import wgextender.Config;
 import wgextender.features.regionprotect.WGOverrideListener;
 import wgextender.utils.WGRegionUtils;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class PvPHandlingListener extends WGOverrideListener {
 
@@ -76,7 +74,7 @@ public class PvPHandlingListener extends WGOverrideListener {
 		// Block PvP like normal even if the player has an override permission
 		// because (1) this is a frequent source of confusion and
 		// (2) some users want to block PvP even with the bypass permission
-		boolean pvp = (event.getEntity() instanceof Player) && (playerAttacker != null) && !playerAttacker.equals(event.getEntity());
+		boolean pvp = event.getEntity() instanceof Player && !playerAttacker.equals(event.getEntity());
 		if (isWhitelisted(event.getCause(), event.getWorld(), pvp)) {
 			return;
 		}
@@ -179,13 +177,10 @@ public class PvPHandlingListener extends WGOverrideListener {
 		if (rootCause instanceof Block) {
 			Material type = ((Block) rootCause).getType();
 			return (type == Material.HOPPER) || (type == Material.DROPPER);
-		} else if (rootCause instanceof Player) {
-			Player player = (Player) rootCause;
-
+		} else if (rootCause instanceof Player player) {
 			if (WGRegionUtils.getWorldConfig(world).fakePlayerBuildOverride && InteropUtils.isFakePlayer(player)) {
 				return true;
 			}
-
 			return !pvp && WGRegionUtils.canBypassProtection(player);
 		} else {
 			return false;
@@ -203,9 +198,7 @@ public class PvPHandlingListener extends WGOverrideListener {
 
 		Object rootCause = cause.getRootCause();
 
-		if (rootCause instanceof Player) {
-			Player player = (Player) rootCause;
-
+		if (rootCause instanceof Player player) {
 			long now = System.currentTimeMillis();
 			Long lastTime = WGMetadata.getIfPresent(player, DENY_MESSAGE_KEY, Long.class);
 			if ((lastTime == null) || ((now - lastTime) >= LAST_MESSAGE_DELAY)) {

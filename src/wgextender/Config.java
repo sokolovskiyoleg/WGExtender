@@ -17,6 +17,13 @@
 
 package wgextender;
 
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.protection.flags.Flag;
+import com.sk89q.worldguard.protection.flags.Flags;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,14 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-
-import com.sk89q.worldguard.WorldGuard;
-import com.sk89q.worldguard.protection.flags.Flag;
-import com.sk89q.worldguard.protection.flags.Flags;
 
 public class Config {
 
@@ -45,7 +44,7 @@ public class Config {
 	public boolean claimExpandSelectionVertical = false;
 
 	public boolean claimBlockLimitsEnabled = false;
-	public Map<String, Integer> claimBlockLimins = new LinkedHashMap<>();
+	public Map<String, Integer> claimBlockLimits = new LinkedHashMap<>();
 
 	public boolean checkLavaFlow = false;
 	public boolean checkWaterFlow = false;
@@ -81,11 +80,11 @@ public class Config {
 		claimExpandSelectionVertical = config.getBoolean("claim.vertexpand", claimExpandSelectionVertical);
 
 		claimBlockLimitsEnabled = config.getBoolean("claim.blocklimits.enabled", claimBlockLimitsEnabled);
-		claimBlockLimins.clear();
+		claimBlockLimits.clear();
 		ConfigurationSection blimitscs = config.getConfigurationSection("claim.blocklimits.limits");
 		if (blimitscs != null) {
 			for (String group : blimitscs.getKeys(false)) {
-				claimBlockLimins.put(group.toLowerCase(), blimitscs.getInt(group));
+				claimBlockLimits.put(group.toLowerCase(), blimitscs.getInt(group));
 			}
 		}
 
@@ -131,10 +130,10 @@ public class Config {
 		config.set("claim.vertexpand", claimExpandSelectionVertical);
 
 		config.set("claim.blocklimits.enabled", claimBlockLimitsEnabled);
-		if (claimBlockLimins.isEmpty()) {
+		if (claimBlockLimits.isEmpty()) {
 			config.createSection("claim.blocklimits.limits");
 		}
-		for (Entry<String, Integer> entry : claimBlockLimins.entrySet()) {
+		for (Entry<String, Integer> entry : claimBlockLimits.entrySet()) {
 			config.set("claim.blocklimits.limits." + entry.getKey(), entry.getValue());
 		}
 
@@ -162,7 +161,7 @@ public class Config {
 
 		config.set("misc.pvpmode", miscDefaultPvPFlagOperationMode != null ? miscDefaultPvPFlagOperationMode ? miscPvPFlagOperationModeAllow : miscPvPFlagOperationModeDeny : miscPvPFlagOperationModeDefault);
 
-		try {config.save(configfile);} catch (IOException e) {}
+		try {config.save(configfile);} catch (IOException ignored) {}
 	}
 
 }

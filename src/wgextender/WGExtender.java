@@ -17,11 +17,9 @@
 
 package wgextender;
 
-import java.util.logging.Level;
-
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
 import wgextender.commands.Commands;
 import wgextender.features.claimcommand.WGRegionCommandWrapper;
 import wgextender.features.custom.OldPVPFlagsHandler;
@@ -40,6 +38,9 @@ import wgextender.features.regionprotect.regionbased.Explode;
 import wgextender.features.regionprotect.regionbased.FireSpread;
 import wgextender.features.regionprotect.regionbased.LiquidFlow;
 
+import java.util.Objects;
+import java.util.logging.Level;
+
 public class WGExtender extends JavaPlugin {
 
 	private static WGExtender instance;
@@ -56,21 +57,22 @@ public class WGExtender extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		VaultIntegration.getInstance().hook();
+		VaultIntegration.getInstance().initialize(this);
 		ChorusFruitUseFlag.assignInstance();
 		OldPVPAttackSpeedFlag.assignInstance();
 		OldPVPNoShieldBlockFlag.assignInstance();
 		OldPVPNoBowFlag.assignInstance();
 		Config config = new Config(this);
 		config.loadConfig();
-		getCommand("wgex").setExecutor(new Commands(config));
-		getServer().getPluginManager().registerEvents(new RestrictCommands(config), this);
-		getServer().getPluginManager().registerEvents(new LiquidFlow(config), this);
-		getServer().getPluginManager().registerEvents(new FireSpread(config), this);
-		getServer().getPluginManager().registerEvents(new BlockBurn(config), this);
-		getServer().getPluginManager().registerEvents(new Explode(config), this);
-		getServer().getPluginManager().registerEvents(new WEWandListener(), this);
-		getServer().getPluginManager().registerEvents(new ChorusFruitFlagHandler(), this);
+		Objects.requireNonNull(getCommand("wgex")).setExecutor(new Commands(config));
+		PluginManager pluginManager = getServer().getPluginManager();
+		pluginManager.registerEvents(new RestrictCommands(config), this);
+		pluginManager.registerEvents(new LiquidFlow(config), this);
+		pluginManager.registerEvents(new FireSpread(config), this);
+		pluginManager.registerEvents(new BlockBurn(config), this);
+		pluginManager.registerEvents(new Explode(config), this);
+		pluginManager.registerEvents(new WEWandListener(), this);
+		pluginManager.registerEvents(new ChorusFruitFlagHandler(), this);
 		try {
 			WGRegionCommandWrapper.inject(config);
 			WEWandCommandWrapper.inject(config);

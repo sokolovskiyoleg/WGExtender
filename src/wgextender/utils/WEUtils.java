@@ -17,15 +17,14 @@
 
 package wgextender.utils;
 
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public class WEUtils {
 
@@ -48,7 +47,7 @@ public class WEUtils {
 			);
             session.getRegionSelector(weworld).learnChanges();
             return true;
-		} catch (Throwable e) {
+		} catch (Throwable ignored) {
 		}
         return false;
 	}

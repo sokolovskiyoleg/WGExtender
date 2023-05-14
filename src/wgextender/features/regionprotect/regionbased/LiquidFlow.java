@@ -27,7 +27,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockFromToEvent;
-
 import wgextender.Config;
 import wgextender.utils.WGRegionUtils;
 
@@ -42,23 +41,20 @@ public class LiquidFlow implements Listener {
 	public void onLiquidFlow(BlockFromToEvent event) {
 		Block b = event.getBlock();
 		switch (b.getType()) {
-			case LAVA: {
+			case LAVA -> {
 				if (config.checkLavaFlow) {
 					check(b.getLocation(), event.getToBlock().getLocation(), event);
 				}
-				break;
 			}
-			case WATER: {
+			case WATER -> {
 				if (config.checkWaterFlow) {
 					check(b.getLocation(), event.getToBlock().getLocation(), event);
 				}
-				break;
 			}
-			default: {
+			default -> {
 				if (config.checkOtherLiquidFlow) {
 					check(b.getLocation(), event.getToBlock().getLocation(), event);
 				}
-				break;
 			}
 		}
 	}
@@ -70,23 +66,20 @@ public class LiquidFlow implements Listener {
 		if (blockData instanceof Directional) {
 			Block nextBlock = block.getRelative(((Directional) blockData).getFacing());
 			switch (event.getItem().getType()) {
-				case LAVA_BUCKET: {
+				case LAVA_BUCKET -> {
 					if (config.checkLavaFlow) {
 						check(block.getLocation(), nextBlock.getLocation(), event);
 					}
-					break;
 				}
-				case WATER_BUCKET: {
+				case WATER_BUCKET -> {
 					if (config.checkWaterFlow) {
 						check(block.getLocation(), nextBlock.getLocation(), event);
 					}
-					break;
 				}
-				default: {
+				default -> {
 					if (config.checkOtherLiquidFlow) {
 						check(block.getLocation(), nextBlock.getLocation(), event);
 					}
-					break;
 				}
 			}
 		}

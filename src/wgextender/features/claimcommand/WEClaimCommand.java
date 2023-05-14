@@ -1,9 +1,5 @@
 package wgextender.features.claimcommand;
 
-import org.bukkit.ChatColor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissionsException;
 import com.sk89q.worldedit.IncompleteRegionException;
@@ -19,7 +15,9 @@ import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.util.DomainInputResolver.UserLocatorPolicy;
-
+import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import wgextender.utils.WEUtils;
 import wgextender.utils.WGRegionUtils;
 
@@ -27,7 +25,7 @@ import wgextender.utils.WGRegionUtils;
 public class WEClaimCommand {
 
 	protected static void claim(String id, CommandSender sender) throws CommandException {
-		if (!(sender instanceof Player)) {
+		if (!(sender instanceof Player player)) {
 			throw new CommandException("Эта команда только для игроков");
 		}
 		if (id.equalsIgnoreCase("__global__")) {
@@ -37,11 +35,9 @@ public class WEClaimCommand {
 			throw new CommandException("Имя региона '" + id + "' содержит запрещённые символы.");
 		}
 
-		Player player = (Player) sender;
+        BukkitWorldConfiguration wcfg = WGRegionUtils.getWorldConfig(player);
 
-		BukkitWorldConfiguration wcfg = WGRegionUtils.getWorldConfig(player);
-
-		if (wcfg.maxClaimVolume >= Integer.MAX_VALUE) {
+		if (wcfg.maxClaimVolume == Integer.MAX_VALUE) {
 			throw new CommandException("The maximum claim volume get in the configuration is higher than is supported. " + "Currently, it must be " + Integer.MAX_VALUE + " or smaller. Please contact a server administrator.");
 		}
 

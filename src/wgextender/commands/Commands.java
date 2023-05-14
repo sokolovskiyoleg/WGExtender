@@ -17,23 +17,6 @@
 
 package wgextender.commands;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
-
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.bukkit.BukkitCommandSender;
@@ -51,13 +34,28 @@ import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.GlobalProtectedRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 import wgextender.Config;
 import wgextender.features.claimcommand.AutoFlags;
 import wgextender.utils.StringUtils;
 import wgextender.utils.Transform;
 import wgextender.utils.WEUtils;
 import wgextender.utils.WGRegionUtils;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 //TODO: refactor
 @SuppressWarnings("deprecation")
@@ -86,7 +84,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 		}
 		if (args.length >= 1) {
 			switch (args[0].toLowerCase()) {
-				case "help": {
+				case "help" -> {
 					sender.sendMessage(ChatColor.BLUE + "wgex reload - перезагрузить конфиг");
 					sender.sendMessage(ChatColor.BLUE + "wgex search - ищет регионы в выделенной области");
 					sender.sendMessage(ChatColor.BLUE + "wgex setflag {world} {flag} {value}  - устанавливает флаг {flag} со значением {value} на все регионы в мире {world}");
@@ -94,19 +92,19 @@ public class Commands implements CommandExecutor, TabCompleter {
 					sender.sendMessage(ChatColor.BLUE + "wgex removemember {name} - удаляет игрока из списков членов всех регионов");
 					return true;
 				}
-				case "reload": {
+				case "reload" -> {
 					config.loadConfig();
 					sender.sendMessage(ChatColor.BLUE + "Конфиг перезагружен");
 					return true;
 				}
-				case "search": {
+				case "search" -> {
 					if (sender instanceof Player) {
 						try {
 							List<String> regions = getRegionsInPlayerSelection((Player) sender);
 							if (regions.isEmpty()) {
 								sender.sendMessage(ChatColor.BLUE + "Регионов пересекающихся с выделенной зоной не найдено");
 							} else {
-								sender.sendMessage(ChatColor.BLUE + "Найдены регионы пересекающиеся с выделенной зоной: "+ regions);
+								sender.sendMessage(ChatColor.BLUE + "Найдены регионы пересекающиеся с выделенной зоной: " + regions);
 							}
 						} catch (IncompleteRegionException e) {
 							sender.sendMessage(ChatColor.BLUE + "Сначала выделите зону поиска");
@@ -115,7 +113,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 					}
 					return false;
 				}
-				case "setflag": {
+				case "setflag" -> {
 					if (args.length < 4) {
 						return false;
 					}
@@ -137,7 +135,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 								}
 								sender.sendMessage(ChatColor.BLUE + "Флаги установлены");
 							} catch (CommandException e) {
-								sender.sendMessage(ChatColor.BLUE + "Неправильный формат флага "+flag.getName()+": "+e.getMessage());
+								sender.sendMessage(ChatColor.BLUE + "Неправильный формат флага " + flag.getName() + ": " + e.getMessage());
 							}
 						} else {
 							sender.sendMessage(ChatColor.BLUE + "Флаг не найден");
@@ -147,7 +145,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 					}
 					return true;
 				}
-				case "removeowner": {
+				case "removeowner" -> {
 					if (args.length != 2) {
 						return false;
 					}
@@ -165,7 +163,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 					sender.sendMessage(ChatColor.BLUE + "Игрок удалён из списков владельцев всех регионов");
 					return true;
 				}
-				case "removemember": {
+				case "removemember" -> {
 					if (args.length != 2) {
 						return false;
 					}
@@ -188,7 +186,6 @@ public class Commands implements CommandExecutor, TabCompleter {
 		return false;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
 		if (!sender.hasPermission("wgextender.admin")) {
@@ -204,34 +201,31 @@ public class Commands implements CommandExecutor, TabCompleter {
 		}
 		if (args.length >= 2) {
 			switch (args[0].toLowerCase()) {
-				case "help":
-				case "reload":
-				case "search": {
+				case "help", "reload", "search" -> {
 					return Collections.emptyList();
 				}
-				case "setflag": {
+				case "setflag" -> {
 					switch (args.length) {
-						case 2: {
+						case 2 -> {
 							return StringUtils.filterStartsWith(args[1], Transform.toList(Bukkit.getWorlds(), World::getName));
 						}
-						case 3: {
+						case 3 -> {
 							return StringUtils.filterStartsWith(args[2], Transform.toList(WorldGuard.getInstance().getFlagRegistry(), Flag::getName));
 						}
-						case 4: {
+						case 4 -> {
 							Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), args[2]);
 							if (flag instanceof StateFlag) {
-								return StringUtils.filterStartsWith(args[3], Transform.toList(StateFlag.State.values(), State::toString));
+								return StringUtils.filterStartsWith(args[3], Transform.toList(State.values(), State::toString));
 							}
 							if (flag instanceof BooleanFlag) {
-								return StringUtils.filterStartsWith(args[3], new String[] {"true", "false"});
+								return StringUtils.filterStartsWith(args[3], new String[]{"true", "false"});
 							}
 							if (flag instanceof EnumFlag<?>) {
 								try {
 									return StringUtils.filterStartsWith(args[3], Transform.toList(((EnumFlag<? extends Enum<?>>) flag).getEnumClass().getEnumConstants(), Enum::toString));
-								} catch (Exception e) {
+								} catch (Exception ignored) {
 								}
 							}
-							break;
 						}
 					}
 					return Collections.emptyList();

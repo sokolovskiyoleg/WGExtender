@@ -1,16 +1,15 @@
 package wgextender.features.flags;
 
-import java.util.Map;
-
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import com.sk89q.worldguard.protection.flags.registry.UnknownFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-
 import wgextender.utils.ReflectionUtils;
 import wgextender.utils.WGRegionUtils;
+
+import java.util.Map;
 
 public class FlagRegistration {
 
@@ -34,7 +33,7 @@ public class FlagRegistration {
 								if (unmarshalled != null) {
 									flags.put(flag, unmarshalled);
 								}
-							} catch (Throwable t) {
+							} catch (Throwable ignored) {
 							}
 						}
 						//before reload instance probably, try to marshal value first to see if it is compatible
@@ -42,7 +41,7 @@ public class FlagRegistration {
 							try {
 								((Flag<Object>) flag).marshal(prevValue);
 								flags.put(flag, prevValue);
-							} catch (Throwable t) {
+							} catch (Throwable ignored) {
 							}
 						}
 						region.setDirty(true);

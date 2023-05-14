@@ -17,8 +17,6 @@
 
 package wgextender.features.extendedwand;
 
-import java.util.Iterator;
-
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -45,13 +43,7 @@ public class WEWandListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onPlayerDeath(PlayerDeathEvent event) {
-		Iterator<ItemStack> dropsit = event.getDrops().iterator();
-		while (dropsit.hasNext()) {
-			ItemStack item = dropsit.next();
-			if (WEWand.isWand(item)) {
-				dropsit.remove();
-			}
-		}
+		event.getDrops().removeIf(WEWand::isWand);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

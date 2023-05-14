@@ -17,10 +17,6 @@
 
 package wgextender.features.regionprotect.ownormembased;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.regex.Pattern;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -28,38 +24,40 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-
 import wgextender.Config;
 import wgextender.WGExtender;
 import wgextender.utils.CommandUtils;
 import wgextender.utils.WGRegionUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+
 public class RestrictCommands implements Listener {
+	private final Pattern SPACE_PATTERN = Pattern.compile("\\s+");
 
 	protected final Config config;
+	protected volatile String[] restrictedCommands;
+
 	public RestrictCommands(Config config) {
 		this.config = config;
-		restrictedCommands = config.restrictedCommandsInRegion.toArray(new String[config.restrictedCommandsInRegion.size()]);
-		Bukkit.getScheduler().runTaskTimerAsynchronously(WGExtender.getInstance(), new Runnable() {
-			private final Pattern whitespacesplit = Pattern.compile("\\s+");
-			@Override
-			public void run() {
-				if (!config.restrictCommandsInRegionEnabled) {
-					return;
-				}
-				ArrayList<String> computedRestrictedCommands = new ArrayList<>();
-				for (String restrictedCommand : config.restrictedCommandsInRegion) {
-					String[] split = whitespacesplit.split(restrictedCommand);
-					for (String alias : CommandUtils.getCommandAliases(split[0])) {
-						computedRestrictedCommands.add(join(alias, split.length > 1 ? Arrays.copyOfRange(split, 1, split.length) : null, " "));
-					}
-				}
-				restrictedCommands = computedRestrictedCommands.toArray(new String[computedRestrictedCommands.size()]);
+		restrictedCommands = config.restrictedCommandsInRegion.toArray(new String[0]);
+		Bukkit.getScheduler().runTaskTimerAsynchronously(WGExtender.getInstance(), () -> {
+			if (!config.restrictCommandsInRegionEnabled) {
+				return;
 			}
+			List<String> computedRestrictedCommands = new ArrayList<>();
+			for (String restrictedCommand : config.restrictedCommandsInRegion) {
+				String[] split = SPACE_PATTERN.split(restrictedCommand);
+				String toAdd = split.length > 1 ? String.join(" ", Arrays.copyOfRange(split, 1, split.length)) : "";
+				for (String alias : CommandUtils.getCommandAliases(split[0])) {
+					computedRestrictedCommands.add(String.join(" ", alias, toAdd));
+				}
+			}
+			restrictedCommands = computedRestrictedCommands.toArray(new String[0]);
 		}, 1, 100);
 	}
-
-	protected volatile String[] restrictedCommands;
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onCommandPreprocess(PlayerCommandPreprocessEvent event) {
@@ -82,18 +80,4 @@ public class RestrictCommands implements Listener {
 			}
 		}
 	}
-
-	protected static String join(String firstElement, String[] args, String delimiter) {
-		if ((args == null) || (args.length == 0)) {
-			return firstElement;
-		}
-		StringBuilder sb = new StringBuilder(50);
-		sb.append(firstElement);
-		for (int i = 0; i < args.length; i++) {
-			sb.append(delimiter);
-			sb.append(args[i]);
-		}
-		return sb.toString();
-	}
-
 }

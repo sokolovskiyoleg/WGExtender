@@ -17,34 +17,27 @@
 
 package wgextender.utils;
 
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandMap;
-import org.bukkit.plugin.PluginManager;
-
 public class CommandUtils {
-
-	@SuppressWarnings("unchecked")
-	public static Map<String, Command> getCommands() throws IllegalAccessException {
-		CommandMap commandMap = getCommandMap();
-		return (Map<String, Command>) ReflectionUtils.getField(commandMap.getClass(), "knownCommands").get(commandMap);
+	public static Map<String, Command> getCommands() {
+		return Bukkit.getCommandMap().getKnownCommands();
 	}
 
 	public static List<String> getCommandAliases(String commandname) {
 		try {
-			Map<String, Command> commands = getCommands();
-			Command command = commands.get(commandname);
+			Command command = getCommands().get(commandname);
 			if (command == null) {
 				return Collections.singletonList(commandname);
 			} else {
-				ArrayList<String> aliases = new ArrayList<>();
+				List<String> aliases = new ArrayList<>();
 				for (Entry<String, Command> entry : getCommands().entrySet()) {
 					if (entry.getValue() == command) {
 						aliases.add(entry.getKey());
@@ -57,19 +50,11 @@ public class CommandUtils {
 		}
 	}
 
-	public static void replaceComamnd(Command oldcommand, Command newcommand) throws IllegalAccessException {
-		Iterator<Entry<String, Command>> iterator = getCommands().entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<String, Command> entry = iterator.next();
-			if (entry.getValue() == oldcommand) {
+	public static void replaceCommand(Command oldcommand, Command newcommand) {
+		for (Entry<String, Command> entry : getCommands().entrySet()) {
+			if (entry.getValue().equals(oldcommand)) {
 				entry.setValue(newcommand);
 			}
 		}
 	}
-
-	protected static CommandMap getCommandMap() throws IllegalAccessException {
-		PluginManager pm = Bukkit.getPluginManager();
-		return (CommandMap) ReflectionUtils.getField(pm.getClass(), "commandMap").get(pm);
-	}
-
 }

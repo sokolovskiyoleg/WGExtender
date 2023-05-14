@@ -21,20 +21,19 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
 import wgextender.Config;
 import wgextender.utils.CommandUtils;
 
 public class WEWandCommandWrapper extends Command {
 
-	public static void inject(Config config) throws IllegalAccessException {
+	public static void inject(Config config) {
 		WEWandCommandWrapper wrapper = new WEWandCommandWrapper(config, CommandUtils.getCommands().get("/wand"));
-		CommandUtils.replaceComamnd(wrapper.originalcommand, wrapper);
+		CommandUtils.replaceCommand(wrapper.originalcommand, wrapper);
 	}
 
-	public static void uninject() throws IllegalAccessException {
+	public static void uninject() {
 		WEWandCommandWrapper wrapper = (WEWandCommandWrapper) CommandUtils.getCommands().get("/wand");
-		CommandUtils.replaceComamnd(wrapper, wrapper.originalcommand);
+		CommandUtils.replaceCommand(wrapper, wrapper.originalcommand);
 	}
 
 	protected final Config config;

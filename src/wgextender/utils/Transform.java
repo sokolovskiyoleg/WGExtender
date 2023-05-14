@@ -38,8 +38,8 @@ public class Transform {
 		return transformedlist;
 	}
 
-	public static interface Function<T, O> {
-		public T transform(O original);
+	public interface Function<T, O> {
+		T transform(O original);
 	}
 
 }

@@ -17,11 +17,7 @@
 
 package wgextender.features.regionprotect.regionbased;
 
-import java.util.Iterator;
-import java.util.function.Predicate;
-
 import org.bukkit.Location;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
@@ -33,9 +29,10 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityExplodeEvent;
-
 import wgextender.Config;
 import wgextender.utils.WGRegionUtils;
+
+import java.util.function.Predicate;
 
 public class Explode implements Listener {
 
@@ -50,19 +47,14 @@ public class Explode implements Listener {
 			return;
 		}
 		Player source = findExplosionSource(event.getEntity());
-		Predicate<Location> shouldProtectBlockPredicate = null;
+		Predicate<Location> shouldProtectBlockPredicate;
 		if (source != null) {
 			boolean canBypass = WGRegionUtils.canBypassProtection(source);
 			shouldProtectBlockPredicate = location -> !canBypass && !WGRegionUtils.canBuild(source, location);
 		} else {
 			shouldProtectBlockPredicate = WGRegionUtils::isInWGRegion;
 		}
-		Iterator<Block> it = event.blockList().iterator();
-		while (it.hasNext()) {
-			if (shouldProtectBlockPredicate.test(it.next().getLocation())) {
-				it.remove();
-			}
-		}
+		event.blockList().removeIf(block -> shouldProtectBlockPredicate.test(block.getLocation()));
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -70,12 +62,7 @@ public class Explode implements Listener {
 		if (!config.checkExplosionBlockDamage) {
 			return;
 		}
-		Iterator<Block> it = event.blockList().iterator();
-		while (it.hasNext()) {
-			if (WGRegionUtils.isInWGRegion(it.next().getLocation())) {
-				it.remove();
-			}
-		}
+		event.blockList().removeIf(block -> WGRegionUtils.isInWGRegion(block.getLocation()));
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
