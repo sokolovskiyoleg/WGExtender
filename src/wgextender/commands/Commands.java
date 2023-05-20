@@ -125,7 +125,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 									if (region instanceof GlobalProtectedRegion) {
 										continue;
 									}
-									AutoFlags.setFlag(WGRegionUtils.FULL_PRIVILEGED, world, region, flag, value);
+									AutoFlags.setFlag(WGRegionUtils.wrapAsPrivileged(sender), world, region, flag, value);
 								}
 								sender.sendMessage(ChatColor.BLUE + "Флаги установлены");
 							} catch (CommandException e) {
