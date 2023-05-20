@@ -66,20 +66,20 @@ public class Explode implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-	public void onEntityDamageByExplosion(EntityDamageEvent e) {
+	public void onEntityDamageByExplosion(EntityDamageEvent event) {
 		if (!config.checkExplosionEntityDamage) {
 			return;
 		}
-		if ((e.getCause() == DamageCause.BLOCK_EXPLOSION) || (e.getCause() == DamageCause.ENTITY_EXPLOSION)) {
-			Location locaiton = e.getEntity().getLocation();
-			if (WGRegionUtils.isInWGRegion(locaiton)) {
-				if (e instanceof EntityDamageByEntityEvent byEntityEvent) {
+		if ((event.getCause() == DamageCause.BLOCK_EXPLOSION) || (event.getCause() == DamageCause.ENTITY_EXPLOSION)) {
+			Location location = event.getEntity().getLocation();
+			if (WGRegionUtils.isInWGRegion(location)) {
+				if (event instanceof EntityDamageByEntityEvent byEntityEvent) {
 					Player source = findExplosionSource(byEntityEvent.getDamager());
-					if ((source == null) || (!WGRegionUtils.canBypassProtection(source) && !WGRegionUtils.canBuild(source, locaiton))) {
-						e.setCancelled(true);
+					if ((source == null) || (!WGRegionUtils.canBypassProtection(source) && !WGRegionUtils.canBuild(source, location))) {
+						event.setCancelled(true);
 					}
 				} else {
-					e.setCancelled(true);
+					event.setCancelled(true);
 				}
 			}
 
@@ -87,10 +87,10 @@ public class Explode implements Listener {
 	}
 
 	protected static Player findExplosionSource(Entity exploded) {
-		if (exploded instanceof TNTPrimed) {
-			Entity source = ((TNTPrimed) exploded).getSource();
-			if (source instanceof Player) {
-				return (Player) source;
+		if (exploded instanceof TNTPrimed primed) {
+			Entity source = primed.getSource();
+			if (source instanceof Player player) {
+				return player;
 			}
 		}
 		//TODO: explosion source for creeper (last damager or target?)?

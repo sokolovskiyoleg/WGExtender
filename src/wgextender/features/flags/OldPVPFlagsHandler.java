@@ -21,20 +21,25 @@ import wgextender.utils.ReflectionUtils;
 import wgextender.utils.WGRegionUtils;
 
 import java.lang.reflect.Field;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 
 public class OldPVPFlagsHandler implements Listener {
-
-	protected final HashMap<UUID, Double> oldValues = new HashMap<>();
+	@SuppressWarnings("deprecation")
+	private static final Set<EntityDamageEvent.DamageModifier> PVP_MODIFIERS = EnumSet.of(
+			DamageModifier.ARMOR, DamageModifier.RESISTANCE, DamageModifier.MAGIC, DamageModifier.ABSORPTION
+	);
+	protected final Map<UUID, Double> oldValues = new HashMap<>();
 	protected Field functionsField;
 
 	public void start() {
 		functionsField = ReflectionUtils.getField(EntityDamageEvent.class, "modifierFunctions");
 		Bukkit.getPluginManager().registerEvents(this, WGExtender.getInstance());
-		Bukkit.getScheduler().scheduleSyncRepeatingTask(WGExtender.getInstance(), () -> {
+		Bukkit.getScheduler().runTaskTimer(WGExtender.getInstance(), () -> {
 			for (Player player : Bukkit.getOnlinePlayers()) {
 				if (WGRegionUtils.isFlagTrue(player.getLocation(), WGExtenderFlags.OLDPVP_ATTACKSPEED)) {
 					if (!oldValues.containsKey(player.getUniqueId())) {
@@ -71,38 +76,37 @@ public class OldPVPFlagsHandler implements Listener {
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
 		Entity entity = event.getEntity();
-		if (entity instanceof Player player) {
-            if (player.isBlocking() && WGRegionUtils.isFlagTrue(entity.getLocation(), WGExtenderFlags.OLDPVP_NOSHIELDBLOCK)) {
-				try {
-					var func = (Map<DamageModifier, Function<Double, Double>>) functionsField.get(event);
-					double damage = event.getDamage() + event.getDamage(DamageModifier.HARD_HAT);
-					//reset blocking modifier
-					event.setDamage(DamageModifier.BLOCKING, 0);
-					//recalculate other modifiers
-					double armorModifier = func.get(DamageModifier.ARMOR).apply(damage);
-					event.setDamage(DamageModifier.ARMOR, armorModifier);
-					damage += armorModifier;
-					double resModifier = func.get(DamageModifier.RESISTANCE).apply(damage);
-					event.setDamage(DamageModifier.RESISTANCE, resModifier);
-					damage += resModifier;
-					double magicModifier = func.get(DamageModifier.MAGIC).apply(damage);
-					event.setDamage(DamageModifier.MAGIC, magicModifier);
-					damage += magicModifier;
-					double absorptionModifier = func.get(DamageModifier.ABSORPTION).apply(damage);
-					event.setDamage(DamageModifier.ABSORPTION, absorptionModifier);
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					WGExtender.getInstance().getLogger().log(Level.SEVERE, "Unable to recalculate blocking damage", e);
-				}
-			}
+		if (!(entity instanceof Player player) ||
+				!player.isBlocking() ||
+				!WGRegionUtils.isFlagTrue(entity.getLocation(), WGExtenderFlags.OLDPVP_NOSHIELDBLOCK)) {
+			return;
+		}
+		Map<DamageModifier, Function<Double, Double>> func;
+		try {
+			func = (Map<DamageModifier, Function<Double, Double>>) functionsField.get(event);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			WGExtender.getInstance().getLogger().log(Level.SEVERE, "Unable to recalculate blocking damage", e);
+			return;
+		}
+		double totalDamage = event.getDamage() + event.getDamage(DamageModifier.HARD_HAT);
+		//reset blocking modifier
+		event.setDamage(DamageModifier.BLOCKING, 0);
+		//recalculate other modifiers
+		for (var modifier : PVP_MODIFIERS) {
+			double damage = func.get(modifier).apply(totalDamage);
+			event.setDamage(modifier, damage);
+			totalDamage += damage;
 		}
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onInteract(PlayerInteractEvent event) {
-		if ((event.getHand() == EquipmentSlot.OFF_HAND) && (event.getPlayer().getInventory().getItemInOffHand().getType() == Material.BOW)) {
-			if (WGRegionUtils.isFlagTrue(event.getPlayer().getLocation(), WGExtenderFlags.OLDPVP_NOBOW)) {
-				event.setCancelled(true);
-			}
+		if (event.getAction().isRightClick() &&
+				event.getHand() == EquipmentSlot.OFF_HAND &&
+				event.getItem() != null &&
+				event.getItem().getType() == Material.BOW &&
+				WGRegionUtils.isFlagTrue(event.getPlayer().getLocation(), WGExtenderFlags.OLDPVP_NOBOW)) {
+			event.setCancelled(true);
 		}
 	}
 

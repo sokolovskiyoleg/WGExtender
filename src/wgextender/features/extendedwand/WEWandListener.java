@@ -33,8 +33,8 @@ public class WEWandListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onEntityAttack(EntityDamageByEntityEvent event) {
 		Entity edamager = event.getDamager();
-		if (edamager instanceof org.bukkit.entity.Player) {
-			ItemStack item = ((Player) edamager).getInventory().getItemInMainHand();
+		if (edamager instanceof Player player) {
+			ItemStack item = player.getInventory().getItemInMainHand();
 			if (WEWand.isWand(item)) {
 				event.setCancelled(true);
 			}

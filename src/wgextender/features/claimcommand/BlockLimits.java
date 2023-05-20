@@ -29,7 +29,6 @@ import java.math.BigInteger;
 
 public class BlockLimits {
 	private static final BigInteger MAX_VALUE = BigInteger.valueOf(Integer.MAX_VALUE);
-	public static final BigInteger RESTRICTED = BigInteger.valueOf(-1);
 
 	public ProcessedClaimInfo processClaimInfo(Config config, Player player) {
 		Region selection;
@@ -86,7 +85,7 @@ public class BlockLimits {
 			if (groups.length == 0) {
 				return ProcessedClaimInfo.EMPTY_ALLOW;
 			}
-			BigInteger maxBlocks = BigInteger.ZERO;
+			BigInteger maxBlocks = config.claimBlockLimitDefault;
 			for (String group : groups) {
 				maxBlocks = maxBlocks.max(config.claimBlockLimits.getOrDefault(group.toLowerCase(), BigInteger.ZERO));
 			}

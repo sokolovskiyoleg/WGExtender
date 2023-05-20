@@ -97,9 +97,9 @@ public class Commands implements CommandExecutor, TabCompleter {
 					return true;
 				}
 				case "search" -> {
-					if (sender instanceof Player) {
+					if (sender instanceof Player player) {
 						try {
-							List<String> regions = getRegionsInPlayerSelection((Player) sender);
+							List<String> regions = getRegionsInPlayerSelection(player);
 							if (regions.isEmpty()) {
 								sender.sendMessage(ChatColor.BLUE + "Регионов пересекающихся с выделенной зоной не найдено");
 							} else {
@@ -126,8 +126,8 @@ public class Commands implements CommandExecutor, TabCompleter {
 									if (region instanceof GlobalProtectedRegion) {
 										continue;
 									}
-									if (sender instanceof Player) {
-										AutoFlags.setFlag(WGRegionUtils.wrapPlayer((Player) sender), world, region, flag, value);
+									if (sender instanceof Player player) {
+										AutoFlags.setFlag(WGRegionUtils.wrapPlayer(player), world, region, flag, value);
 									} else {
 										AutoFlags.setFlag(new BukkitCommandSender(WEUtils.getWorldEditPlugin(), sender), world, region, flag, value);
 									}
