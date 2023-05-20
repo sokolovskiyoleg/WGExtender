@@ -26,15 +26,15 @@ import com.sk89q.worldguard.commands.region.RegionCommands;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
-import it.unimi.dsi.fastutil.chars.CharSet;
 import it.unimi.dsi.fastutil.chars.CharSets;
 import org.bukkit.World;
 import wgextender.Config;
 import wgextender.utils.WGRegionUtils;
 
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Set;
 
 public class AutoFlags {
 	private AutoFlags() {}
@@ -65,18 +65,18 @@ public class AutoFlags {
 	}
 
 	protected static final RegionCommands regionCommands = new RegionCommands(WorldGuard.getInstance());
-	protected static final CharSet flagCommandValueFlags = getFlagCommandValueFlags();
+	protected static final Set<Character> flagCommandValueFlags = getFlagCommandValueFlags();
 	public static <T> void setFlag(Actor actor, World world, ProtectedRegion region, Flag<T> flag, String value) throws CommandException {
-		CommandContext ccontext = new CommandContext(String.format("flag %s -w %s %s %s", region.getId(), world.getName(), flag.getName(), value), flagCommandValueFlags);
-		regionCommands.flag(ccontext, actor);
+		CommandContext context = new CommandContext(String.format("flag %s -w %s %s %s", region.getId(), world.getName(), flag.getName(), value), flagCommandValueFlags);
+		regionCommands.flag(context, actor);
 	}
 
-	protected static CharSet getFlagCommandValueFlags() {
+	protected static Set<Character> getFlagCommandValueFlags() {
 		try {
 			Method method = RegionCommands.class.getMethod("flag", CommandContext.class, Actor.class);
 			Command annotation = method.getAnnotation(Command.class);
 			char[] flags = annotation.flags().toCharArray();
-			CharSet valueFlags = new CharOpenHashSet();
+			Set<Character> valueFlags = new HashSet<>();
 			for (int i = 0; i < flags.length; ++i) {
 				if ((flags.length > (i + 1)) && (flags[i + 1] == ':')) {
 					valueFlags.add(flags[i]);
