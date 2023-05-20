@@ -31,29 +31,25 @@ public class CommandUtils {
 		return Bukkit.getCommandMap().getKnownCommands();
 	}
 
-	public static List<String> getCommandAliases(String commandname) {
-		try {
-			Command command = getCommands().get(commandname);
-			if (command == null) {
-				return Collections.singletonList(commandname);
-			} else {
-				List<String> aliases = new ArrayList<>();
-				for (Entry<String, Command> entry : getCommands().entrySet()) {
-					if (entry.getValue() == command) {
-						aliases.add(entry.getKey());
-					}
+	public static List<String> getCommandAliases(String commandName) {
+		Command command = getCommands().get(commandName);
+		if (command == null) {
+			return Collections.singletonList(commandName);
+		} else {
+			List<String> aliases = new ArrayList<>();
+			for (Entry<String, Command> entry : getCommands().entrySet()) {
+				if (entry.getValue().equals(command)) {
+					aliases.add(entry.getKey());
 				}
-				return aliases;
 			}
-		} catch (Throwable t) {
-			return Collections.singletonList(commandname);
+			return aliases;
 		}
 	}
 
-	public static void replaceCommand(Command oldcommand, Command newcommand) {
+	public static void replaceCommand(Command oldCommand, Command newCommand) {
 		for (Entry<String, Command> entry : getCommands().entrySet()) {
-			if (entry.getValue().equals(oldcommand)) {
-				entry.setValue(newcommand);
+			if (entry.getValue().equals(oldCommand)) {
+				entry.setValue(newCommand);
 			}
 		}
 	}

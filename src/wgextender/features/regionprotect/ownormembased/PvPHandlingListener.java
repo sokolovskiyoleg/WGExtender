@@ -202,7 +202,7 @@ public class PvPHandlingListener extends WGOverrideListener {
 			if ((lastTime == null) || ((now - lastTime) >= LAST_MESSAGE_DELAY)) {
 				@SuppressWarnings("deprecation")
 				String message = WGRegionUtils.REGION_QUERY.queryValue(BukkitAdapter.adapt(location), WorldGuardPlugin.inst().wrapPlayer(player), Flags.DENY_MESSAGE);
-				if ((message != null) && !message.isEmpty()) {
+				if (message != null && !message.isEmpty()) {
 					player.sendMessage(message.replace("%what%", what));
 				}
 				WGMetadata.put(player, DENY_MESSAGE_KEY, now);

@@ -11,21 +11,24 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import wgextender.utils.ReflectionUtils;
 import wgextender.utils.WGRegionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public final class WGExtenderFlags {
     private WGExtenderFlags() {}
 
-    public static final StateFlag CHORUS_FRUIT_USE_FLAG = new StateFlag("chorus-fruit-use", true);
-    public static final BooleanFlag OLDPVP_ATTACKSPEED = new BooleanFlag("oldpvp-attackspeed");
-    public static final BooleanFlag OLDPVP_NOBOW = new BooleanFlag("oldpvp-nobow");
-    public static final BooleanFlag OLDPVP_NOSHIELDBLOCK = new BooleanFlag("oldpvp-noshieldblock");
-    
-    public static final List<Flag<?>> FLAGS = List.of(
-            CHORUS_FRUIT_USE_FLAG, 
-            OLDPVP_ATTACKSPEED, OLDPVP_NOBOW, OLDPVP_NOSHIELDBLOCK
-    );
+    private static final List<Flag<?>> FLAGS = new ArrayList<>();
+
+    public static final StateFlag CHORUS_FRUIT_USE_FLAG = cache(new StateFlag("chorus-fruit-use", true));
+    public static final BooleanFlag OLDPVP_ATTACKSPEED = cache(new BooleanFlag("oldpvp-attackspeed"));
+    public static final BooleanFlag OLDPVP_NOBOW = cache(new BooleanFlag("oldpvp-nobow"));
+    public static final BooleanFlag OLDPVP_NOSHIELDBLOCK = cache(new BooleanFlag("oldpvp-noshieldblock"));
+
+    private static <T, F extends Flag<T>> F cache(F flag) {
+        FLAGS.add(flag);
+        return flag;
+    }
 
     @SuppressWarnings("unchecked")
     public static void registerFlags() throws IllegalAccessException {

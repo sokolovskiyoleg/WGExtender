@@ -69,8 +69,7 @@ public class RestrictCommands implements Listener {
 			return;
 		}
 		if (WGRegionUtils.isInWGRegion(player.getLocation()) && !WGRegionUtils.canBuild(player, player.getLocation())) {
-			String message = event.getMessage();
-			message = message.replaceFirst("/", "").toLowerCase();
+			String message = event.getMessage().substring(1).toLowerCase();
 			for (String rcommand : restrictedCommands) {
 				if (message.startsWith(rcommand) && ((message.length() == rcommand.length()) || (message.charAt(rcommand.length()) == ' '))) {
 					event.setCancelled(true);

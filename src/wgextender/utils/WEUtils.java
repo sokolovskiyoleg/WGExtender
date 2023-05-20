@@ -38,17 +38,16 @@ public class WEUtils {
 
 	public static boolean expandVert(Player player) {
 		LocalSession session = getWorldEditPlugin().getSession(player);
-		com.sk89q.worldedit.world.World weworld = BukkitAdapter.adapt(player.getWorld());
+		com.sk89q.worldedit.world.World weWorld = BukkitAdapter.adapt(player.getWorld());
         try {
-			Region region = session.getSelection(weworld);
+			Region region = session.getSelection(weWorld);
 			region.expand(
-				BlockVector3.at(0, (weworld.getMaxY() + 1), 0),
-				BlockVector3.at(0, -(weworld.getMaxY() + 1), 0)
+					BlockVector3.at(0, (weWorld.getMaxY() + 1), 0),
+					BlockVector3.at(0, -(weWorld.getMaxY() + 1), 0)
 			);
-            session.getRegionSelector(weworld).learnChanges();
+            session.getRegionSelector(weWorld).learnChanges();
             return true;
-		} catch (Throwable ignored) {
-		}
+		} catch (Throwable ignored) { }
         return false;
 	}
 

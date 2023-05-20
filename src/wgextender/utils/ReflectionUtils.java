@@ -17,7 +17,6 @@
 
 package wgextender.utils;
 
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 
 public class ReflectionUtils {
@@ -26,16 +25,12 @@ public class ReflectionUtils {
 		do {
 			for (Field field : clazz.getDeclaredFields()) {
 				if (field.getName().equals(name)) {
-					return setAccessible(field);
+					field.setAccessible(true);
+					return field;
 				}
 			}
 		} while ((clazz = clazz.getSuperclass()) != null);
-		throw new RuntimeException("Can't find field "+name);
-	}
-
-	public static <T extends AccessibleObject> T setAccessible(T object) {
-		object.setAccessible(true);
-		return object;
+		throw new RuntimeException("Can't find field " + name);
 	}
 
 }

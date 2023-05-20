@@ -26,12 +26,12 @@ import com.sk89q.worldguard.commands.region.RegionCommands;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-import it.unimi.dsi.fastutil.chars.CharSets;
 import org.bukkit.World;
 import wgextender.Config;
 import wgextender.utils.WGRegionUtils;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -86,7 +86,7 @@ public class AutoFlags {
 			return valueFlags;
 		} catch (Throwable t) {
 			t.printStackTrace();
-			return CharSets.emptySet();
+			return Collections.emptySet();
 		}
 	}
 

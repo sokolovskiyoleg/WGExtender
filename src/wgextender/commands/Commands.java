@@ -42,13 +42,14 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.util.StringUtil;
 import wgextender.Config;
 import wgextender.features.claimcommand.AutoFlags;
-import wgextender.utils.StringUtils;
 import wgextender.utils.Transform;
 import wgextender.utils.WEUtils;
 import wgextender.utils.WGRegionUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -186,11 +187,12 @@ public class Commands implements CommandExecutor, TabCompleter {
 			return Collections.emptyList();
 		}
 		if (args.length == 1) {
-			return StringUtils.filterStartsWith(
-				args[0],
-				sender instanceof Player ?
-				new String[] { "help", "reload", "search", "setflag", "removeowner", "removemember" } :
-				new String[] { "help", "reload", "setflag", "removeowner", "removemember"}
+			return StringUtil.copyPartialMatches(
+					args[0],
+					sender instanceof Player
+							? List.of("help", "reload", "search", "setflag", "removeowner", "removemember")
+							: List.of("help", "reload", "setflag", "removeowner", "removemember"),
+					new ArrayList<>()
 			);
 		}
 		if (args.length >= 2) {
@@ -201,22 +203,22 @@ public class Commands implements CommandExecutor, TabCompleter {
 				case "setflag" -> {
 					switch (args.length) {
 						case 2 -> {
-							return StringUtils.filterStartsWith(args[1], Transform.toList(Bukkit.getWorlds(), World::getName));
+							return StringUtil.copyPartialMatches(args[1], Transform.toList(Bukkit.getWorlds(), World::getName), new ArrayList<>());
 						}
 						case 3 -> {
-							return StringUtils.filterStartsWith(args[2], Transform.toList(WorldGuard.getInstance().getFlagRegistry(), Flag::getName));
+							return StringUtil.copyPartialMatches(args[2], Transform.toList(WorldGuard.getInstance().getFlagRegistry(), Flag::getName), new ArrayList<>());
 						}
 						case 4 -> {
 							Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), args[2]);
 							if (flag instanceof StateFlag) {
-								return StringUtils.filterStartsWith(args[3], Transform.toList(State.values(), State::toString));
+								return StringUtil.copyPartialMatches(args[3], Transform.toList(State.values(), State::toString), new ArrayList<>());
 							}
 							if (flag instanceof BooleanFlag) {
-								return StringUtils.filterStartsWith(args[3], new String[]{"true", "false"});
+								return StringUtil.copyPartialMatches(args[3], List.of("true", "false"), new ArrayList<>());
 							}
 							if (flag instanceof EnumFlag<?>) {
 								try {
-									return StringUtils.filterStartsWith(args[3], Transform.toList(((EnumFlag<? extends Enum<?>>) flag).getEnumClass().getEnumConstants(), Enum::toString));
+									return StringUtil.copyPartialMatches(args[3], Transform.toList(((EnumFlag<? extends Enum<?>>) flag).getEnumClass().getEnumConstants(), Enum::toString), new ArrayList<>());
 								} catch (Exception ignored) {
 								}
 							}
