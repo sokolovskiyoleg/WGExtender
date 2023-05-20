@@ -17,11 +17,11 @@
 
 package wgextender.utils;
 
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
-
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extension.platform.Actor;
+import com.sk89q.worldedit.internal.cui.CUIEvent;
+import com.sk89q.worldedit.session.SessionKey;
+import com.sk89q.worldedit.util.formatting.text.Component;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.bukkit.BukkitWorldConfiguration;
@@ -34,9 +34,73 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+
+import java.io.File;
+import java.util.Locale;
+import java.util.UUID;
 
 public class WGRegionUtils {
-
+	public static final Actor FULL_PRIVILEGED = new Actor() {
+		private static final String[] GROUPS = new String[0];
+		@Override
+		public String getName() {
+			return Bukkit.getConsoleSender().getName();
+		}
+		@Override
+		public void printRaw(String msg) { }
+		@Override
+		public void printDebug(String msg) { }
+		@Override
+		public void print(String msg) { }
+		@Override
+		public void printError(String msg) { }
+		@Override
+		public void print(Component component) { }
+		@Override
+		public boolean canDestroyBedrock() {
+			return true;
+		}
+		@Override
+		public boolean isPlayer() {
+			return false;
+		}
+		@Override
+		public File openFileOpenDialog(String[] extensions) {
+			return null;
+		}
+		@Override
+		public File openFileSaveDialog(String[] extensions) {
+			return null;
+		}
+		@Override
+		public void dispatchCUIEvent(CUIEvent event) { }
+		@Override
+		public Locale getLocale() {
+			return null;
+		}
+		@Override
+		public SessionKey getSessionKey() {
+			return null;
+		}
+		@Override
+		public UUID getUniqueId() {
+			return null;
+		}
+		@Override
+		public String[] getGroups() {
+			return GROUPS;
+		}
+		@Override
+		public void checkPermission(String permission) { }
+		@Override
+		public boolean hasPermission(String permission) {
+			return true;
+		}
+	};
 	public static final RegionQuery REGION_QUERY = getRegionContainer().createQuery();
 
 	public static LocalPlayer wrapPlayer(Player player) {

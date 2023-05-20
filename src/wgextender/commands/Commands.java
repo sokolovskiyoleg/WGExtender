@@ -19,7 +19,6 @@ package wgextender.commands;
 
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.worldedit.IncompleteRegionException;
-import com.sk89q.worldedit.bukkit.BukkitCommandSender;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.domains.DefaultDomain;
@@ -126,11 +125,7 @@ public class Commands implements CommandExecutor, TabCompleter {
 									if (region instanceof GlobalProtectedRegion) {
 										continue;
 									}
-									if (sender instanceof Player player) {
-										AutoFlags.setFlag(WGRegionUtils.wrapPlayer(player), world, region, flag, value);
-									} else {
-										AutoFlags.setFlag(new BukkitCommandSender(WEUtils.getWorldEditPlugin(), sender), world, region, flag, value);
-									}
+									AutoFlags.setFlag(WGRegionUtils.FULL_PRIVILEGED, world, region, flag, value);
 								}
 								sender.sendMessage(ChatColor.BLUE + "Флаги установлены");
 							} catch (CommandException e) {
