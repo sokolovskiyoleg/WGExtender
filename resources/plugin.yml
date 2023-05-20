@@ -5,4 +5,5 @@ version: '${project.version}'
 author: _Shevchik_
 depend: [WorldGuard, WorldEdit, Vault]
 commands:
-  wgex: {}
+  wgextender:
+    aliases: [wgex]

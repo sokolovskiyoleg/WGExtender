@@ -23,7 +23,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import wgextender.Config;
-import wgextender.features.claimcommand.BlockLimits.ProcessedClaimInfo;
 import wgextender.utils.CommandUtils;
 import wgextender.utils.WEUtils;
 import wgextender.utils.WGRegionUtils;
@@ -61,12 +60,7 @@ public class WGRegionCommandWrapper extends Command {
 					player.sendMessage(ChatColor.YELLOW + "Регион автоматически расширен по вертикали");
 				}
 			}
-			ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
-			if (!info.isClaimAllowed()) {
-				player.sendMessage(ChatColor.RED + "Вы не можете заприватить такой большой регион");
-				if (!info.getMaxSize().equals(BlockLimits.RESTRICTED)) {
-					player.sendMessage(ChatColor.RED + "Ваш лимит: "+info.getMaxSize()+", вы попытались заприватить: "+info.getClaimedSize());
-				}
+			if (!process(player)) {
 				return true;
 			}
 			boolean hasRegion = AutoFlags.hasRegion(player.getWorld(), regionName);
@@ -84,4 +78,30 @@ public class WGRegionCommandWrapper extends Command {
 		}
 	}
 
+	private boolean process(Player player) {
+		BlockLimits.ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
+		switch (info.result()) {
+			default: return true;
+			case DENY_MAX_VOLUME: {
+				player.sendMessage(ChatColor.RED + "Вы не можете заприватить такой большой регион");
+				player.sendMessage(ChatColor.RED + "Ваш лимит: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
+				return false;
+			}
+			case DENY_MIN_VOLUME: {
+				player.sendMessage(ChatColor.RED + "Вы не можете заприватить такой маленький регион");
+				player.sendMessage(ChatColor.RED + "Минимальный объем: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
+				return false;
+			}
+			case DENY_HORIZONTAL: {
+				player.sendMessage(ChatColor.RED + "Вы не можете заприватить такой маленький регион");
+				player.sendMessage(ChatColor.RED + "Минимальная ширина: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
+				return false;
+			}
+			case DENY_VERTICAL: {
+				player.sendMessage(ChatColor.RED + "Вы не можете заприватить такой низкий регион");
+				player.sendMessage(ChatColor.RED + "Минимальная высота: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
+				return false;
+			}
+		}
+	}
 }

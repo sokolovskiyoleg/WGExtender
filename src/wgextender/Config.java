@@ -23,28 +23,33 @@ import com.sk89q.worldguard.protection.flags.Flags;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 public class Config {
 
-	protected final File configfile;
+	private final Plugin plugin;
+	protected final File configFile;
 	public Config(WGExtender plugin) {
-		configfile = new File(plugin.getDataFolder(), "config.yml");
+		this.plugin = plugin;
+		configFile = new File(plugin.getDataFolder(), "config.yml");
 	}
 
 	public boolean claimExpandSelectionVertical = false;
 
 	public boolean claimBlockLimitsEnabled = false;
-	public Map<String, Integer> claimBlockLimits = new LinkedHashMap<>();
+	public Map<String, BigInteger> claimBlockLimits = new LinkedHashMap<>();
+	public BigInteger claimBlockLimitDefault = BigInteger.ZERO;
+	public BigInteger claimBlockMinimalVolume = BigInteger.ZERO;
+	public BigInteger claimBlockMinimalHorizontal = BigInteger.ZERO;
+	public BigInteger claimBlockMinimalVertical = BigInteger.ZERO;
 
 	public boolean checkLavaFlow = false;
 	public boolean checkWaterFlow = false;
@@ -70,22 +75,38 @@ public class Config {
 	protected static final String miscPvPFlagOperationModeDefault = "default";
 
 	public void loadConfig() {
-		loadcfg();
-		savecfg();
+		plugin.saveDefaultConfig();
+		loadAll();
 	}
 
-	private void loadcfg() {
-		FileConfiguration config = YamlConfiguration.loadConfiguration(configfile);
+	private void loadAll() {
+		FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
 
 		claimExpandSelectionVertical = config.getBoolean("claim.vertexpand", claimExpandSelectionVertical);
 
 		claimBlockLimitsEnabled = config.getBoolean("claim.blocklimits.enabled", claimBlockLimitsEnabled);
 		claimBlockLimits.clear();
-		ConfigurationSection blimitscs = config.getConfigurationSection("claim.blocklimits.limits");
-		if (blimitscs != null) {
-			for (String group : blimitscs.getKeys(false)) {
-				claimBlockLimits.put(group.toLowerCase(), blimitscs.getInt(group));
+		ConfigurationSection limitsSection = config.getConfigurationSection("claim.blocklimits.limits");
+		if (limitsSection != null) {
+			claimBlockLimitDefault = asBig(limitsSection, "default");
+			for (String group : limitsSection.getKeys(false)) {
+				claimBlockLimits.put(
+						group.toLowerCase(),
+						asBig(limitsSection, group)
+				);
 			}
+		} else {
+			claimBlockLimitDefault = BigInteger.ZERO;
+		}
+		ConfigurationSection minLimitsSection = config.getConfigurationSection("claim.blocklimits.minimal");
+		if (minLimitsSection != null) {
+			claimBlockMinimalVolume = asBig(minLimitsSection, "volume");
+			claimBlockMinimalHorizontal = asBig(minLimitsSection, "horizontal");
+			claimBlockMinimalVertical = asBig(minLimitsSection, "vertical");
+		} else {
+			claimBlockMinimalVolume = BigInteger.ZERO;
+			claimBlockMinimalHorizontal = BigInteger.ZERO;
+			claimBlockMinimalVertical = BigInteger.ZERO;
 		}
 
 		checkLavaFlow = config.getBoolean("regionprotect.flow.lava", checkLavaFlow);
@@ -99,12 +120,12 @@ public class Config {
 
 		claimAutoFlagsEnabled = config.getBoolean("autoflags.enabled",claimAutoFlagsEnabled);
 		claimAutoFlags.clear();
-		ConfigurationSection aflagscs = config.getConfigurationSection("autoflags.flags");
-		if (aflagscs != null) {
-			for (String sflag : aflagscs.getKeys(false)) {
-				Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), sflag);
+		ConfigurationSection autoflagsSection = config.getConfigurationSection("autoflags.flags");
+		if (autoflagsSection != null) {
+			for (String flagStr : autoflagsSection.getKeys(false)) {
+				Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), flagStr);
 				if (flag != null) {
-					claimAutoFlags.put(flag, aflagscs.getString(sflag));
+					claimAutoFlags.put(flag, autoflagsSection.getString(flagStr));
 				}
 			}
 		}
@@ -124,44 +145,13 @@ public class Config {
 		}
 	}
 
-	private void savecfg() {
-		FileConfiguration config = new YamlConfiguration();
-
-		config.set("claim.vertexpand", claimExpandSelectionVertical);
-
-		config.set("claim.blocklimits.enabled", claimBlockLimitsEnabled);
-		if (claimBlockLimits.isEmpty()) {
-			config.createSection("claim.blocklimits.limits");
+	private static BigInteger asBig(ConfigurationSection section, String key) {
+		if (section.isInt(key)) {
+			return BigInteger.valueOf(section.getInt(key));
+		} else {
+			String value = section.getString(key, "0");
+			if (value.equals("0")) return BigInteger.ZERO;
+			return new BigInteger(value);
 		}
-		for (Entry<String, Integer> entry : claimBlockLimits.entrySet()) {
-			config.set("claim.blocklimits.limits." + entry.getKey(), entry.getValue());
-		}
-
-		config.set("regionprotect.flow.lava", checkLavaFlow);
-		config.set("regionprotect.flow.water", checkWaterFlow);
-		config.set("regionprotect.flow.other", checkOtherLiquidFlow);
-		config.set("regionprotect.fire.spread.toregion", checkFireSpreadToRegion);
-		config.set("regionprotect.fire.spread.inregion", disableFireSpreadInRegion);
-		config.set("regionprotect.fire.burn", disableBlockBurnInRegion);
-		config.set("regionprotect.explosion.block", checkExplosionBlockDamage);
-		config.set("regionprotect.explosion.entity", checkExplosionEntityDamage);
-
-		config.set("autoflags.enabled", claimAutoFlagsEnabled);
-		if (claimAutoFlags.isEmpty()) {
-			config.createSection("autoflags.flags");
-		}
-		for (Entry<Flag<?>, String> entry : claimAutoFlags.entrySet()) {
-			config.set("autoflags.flags." + entry.getKey().getName(), entry.getValue());
-		}
-
-		config.set("restrictcommands.enabled", restrictCommandsInRegionEnabled);
-		config.set("restrictcommands.commands", new ArrayList<>(restrictedCommandsInRegion));
-
-		config.set("extendedwewand", extendedWorldEditWandEnabled);
-
-		config.set("misc.pvpmode", miscDefaultPvPFlagOperationMode != null ? miscDefaultPvPFlagOperationMode ? miscPvPFlagOperationModeAllow : miscPvPFlagOperationModeDeny : miscPvPFlagOperationModeDefault);
-
-		try {config.save(configfile);} catch (IOException ignored) {}
 	}
-
 }

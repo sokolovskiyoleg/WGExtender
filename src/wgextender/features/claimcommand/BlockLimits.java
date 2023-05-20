@@ -32,76 +32,81 @@ public class BlockLimits {
 	public static final BigInteger RESTRICTED = BigInteger.valueOf(-1);
 
 	public ProcessedClaimInfo processClaimInfo(Config config, Player player) {
-		ProcessedClaimInfo info = new ProcessedClaimInfo();
-		Region psel;
+		Region selection;
 		try {
-			psel = WEUtils.getSelection(player);
+			selection = WEUtils.getSelection(player);
 		} catch (IncompleteRegionException e) {
-			return info;
+			return ProcessedClaimInfo.EMPTY_ALLOW;
 		}
-		BlockVector3 min = psel.getMinimumPoint();
-		BlockVector3 max = psel.getMaximumPoint();
-		BigInteger size = BigInteger.ONE;
-		size = size.multiply(distance(min.getBlockX(), max.getBlockX()));
-		size = size.multiply(distance(min.getBlockY(), max.getBlockY()));
-		size = size.multiply(distance(min.getBlockZ(), max.getBlockZ()));
-		if (size.compareTo(MAX_VALUE) > 0) {
-			info.disallow();
-			info.setInfo(size, RESTRICTED);
-			return info;
+		BlockVector3 min = selection.getMinimumPoint();
+		BlockVector3 max = selection.getMaximumPoint();
+
+		BigInteger yDistance = distance(min.getBlockY(), max.getBlockY());
+		BigInteger xDistance = distance(min.getBlockX(), max.getBlockX());
+		BigInteger zDistance = distance(min.getBlockZ(), max.getBlockZ());
+		BigInteger minHorizontal = xDistance.min(zDistance);
+
+		BigInteger volume = BigInteger.ONE
+				.multiply(xDistance)
+				.multiply(zDistance)
+				.multiply(yDistance);
+		if (volume.compareTo(MAX_VALUE) > 0) {
+			return new ProcessedClaimInfo(
+					Result.DENY_MAX_VOLUME,
+					volume,
+					MAX_VALUE
+			);
 		}
 		if (config.claimBlockLimitsEnabled) {
 			if (player.hasPermission("worldguard.region.unlimited")) {
-				return info;
+				return ProcessedClaimInfo.EMPTY_ALLOW;
 			}
-			String[] pgroups = VaultIntegration.getInstance().getPermissions().getPlayerGroups(player);
-			if (pgroups.length == 0) {
-				return info;
+			if (volume.compareTo(config.claimBlockMinimalVolume) < 0) {
+				return new ProcessedClaimInfo(
+						Result.DENY_MIN_VOLUME,
+						volume,
+						config.claimBlockMinimalVolume
+				);
 			}
-			int maxBlocks = 0;
-			for (String pgroup : pgroups) {
-				pgroup = pgroup.toLowerCase();
-				if (config.claimBlockLimits.containsKey(pgroup)) {
-					maxBlocks = Math.max(maxBlocks, config.claimBlockLimits.get(pgroup));
-				}
+			if (minHorizontal.compareTo(config.claimBlockMinimalHorizontal) < 0) {
+				return new ProcessedClaimInfo(
+						Result.DENY_MIN_VOLUME,
+						minHorizontal,
+						config.claimBlockMinimalHorizontal
+				);
 			}
-			BigInteger maxBlocksi = BigInteger.valueOf(maxBlocks);
-			if (size.compareTo(maxBlocksi) > 0) {
-				info.disallow();
-				info.setInfo(size, maxBlocksi);
-				return info;
+			if (yDistance.compareTo(config.claimBlockMinimalVertical) < 0) {
+				return new ProcessedClaimInfo(
+						Result.DENY_VERTICAL,
+						yDistance,
+						config.claimBlockMinimalVertical
+				);
+			}
+			String[] groups = VaultIntegration.getInstance().getPermissions().getPlayerGroups(player);
+			if (groups.length == 0) {
+				return ProcessedClaimInfo.EMPTY_ALLOW;
+			}
+			BigInteger maxBlocks = BigInteger.ZERO;
+			for (String group : groups) {
+				maxBlocks = maxBlocks.max(config.claimBlockLimits.getOrDefault(group.toLowerCase(), BigInteger.ZERO));
+			}
+			if (volume.compareTo(maxBlocks) > 0) {
+				return new ProcessedClaimInfo(
+						Result.DENY_MAX_VOLUME,
+						volume,
+						maxBlocks
+				);
 			}
 		}
-		return info;
+		return ProcessedClaimInfo.EMPTY_ALLOW;
 	}
-
-	protected static class ProcessedClaimInfo {
-
-		private boolean claimAllowed = true;
-		private BigInteger size;
-		private BigInteger maxSize;
-
-		public void disallow() {
-			claimAllowed = false;
-		}
-
-		public boolean isClaimAllowed() {
-			return claimAllowed;
-		}
-
-		public void setInfo(BigInteger claimed, BigInteger max) {
-			size = claimed;
-			maxSize = max;
-		}
-
-		public BigInteger getClaimedSize() {
-			return size;
-		}
-
-		public BigInteger getMaxSize() {
-			return maxSize;
-		}
-
+	
+	public record ProcessedClaimInfo(Result result, BigInteger assignedSize, BigInteger assignedLimit) {
+		public static final ProcessedClaimInfo EMPTY_ALLOW = new ProcessedClaimInfo(Result.ALLOW, BigInteger.ZERO, BigInteger.ZERO);
+	}
+	
+	public enum Result {
+		ALLOW, DENY_MAX_VOLUME, DENY_MIN_VOLUME, DENY_HORIZONTAL, DENY_VERTICAL
 	}
 
 	private static BigInteger distance(long min, long max) {
