@@ -105,6 +105,6 @@ public class BlockLimits {
 	}
 
 	private static BigInteger distance(long min, long max) {
-		return BigInteger.valueOf(Math.max(max - min, 1));
+		return BigInteger.valueOf(max - min + 1L);
 	}
 }
