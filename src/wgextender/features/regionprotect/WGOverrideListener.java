@@ -1,21 +1,22 @@
 package wgextender.features.regionprotect;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-
+import it.unimi.dsi.fastutil.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.RegisteredListener;
-
 import wgextender.WGExtender;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public abstract class WGOverrideListener implements Listener {
 
-	private final ArrayList<Tuple<HandlerList, RegisteredListener>> overridenEvents = new ArrayList<>();
+	private final List<Pair<HandlerList, RegisteredListener>> overriddenEvents = new ArrayList<>();
 
 	public void inject() throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		for (Method method : getClass().getMethods()) {
@@ -24,7 +25,7 @@ public abstract class WGOverrideListener implements Listener {
 				HandlerList hl = (HandlerList) eventClass.getMethod("getHandlerList").invoke(null);
 				for (RegisteredListener listener : new ArrayList<>(Arrays.asList(hl.getRegisteredListeners()))) {
 					if (listener.getListener().getClass() == getClassToReplace()) {
-						overridenEvents.add(new Tuple<>(hl, listener));
+						overriddenEvents.add(Pair.of(hl, listener));
 						hl.unregister(listener);
 					}
 				}
@@ -35,25 +36,10 @@ public abstract class WGOverrideListener implements Listener {
 
 	public void uninject() {
 		HandlerList.unregisterAll(this);
-		for (Tuple<HandlerList, RegisteredListener> tuple : overridenEvents) {
-			tuple.getO1().register(tuple.getO2());
+		for (var pair : overriddenEvents) {
+			pair.first().register(pair.second());
 		}
-		overridenEvents.clear();
-	}
-
-	private static class Tuple<T1, T2> {
-		private final T1 o1;
-		private final T2 o2;
-		public Tuple(T1 t1, T2 t2) {
-			this.o1 = t1;
-			this.o2 = t2;
-		}
-		public T1 getO1() {
-			return o1;
-		}
-		public T2 getO2() {
-			return o2;
-		}
+		overriddenEvents.clear();
 	}
 
 	protected abstract Class<? extends Listener> getClassToReplace();

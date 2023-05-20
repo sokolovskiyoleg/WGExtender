@@ -28,31 +28,31 @@ public class WEWandCommandWrapper extends Command {
 
 	public static void inject(Config config) {
 		WEWandCommandWrapper wrapper = new WEWandCommandWrapper(config, CommandUtils.getCommands().get("/wand"));
-		CommandUtils.replaceCommand(wrapper.originalcommand, wrapper);
+		CommandUtils.replaceCommand(wrapper.originalCmd, wrapper);
 	}
 
 	public static void uninject() {
 		WEWandCommandWrapper wrapper = (WEWandCommandWrapper) CommandUtils.getCommands().get("/wand");
-		CommandUtils.replaceCommand(wrapper, wrapper.originalcommand);
+		CommandUtils.replaceCommand(wrapper, wrapper.originalCmd);
 	}
 
 	protected final Config config;
-	protected final Command originalcommand;
+	protected final Command originalCmd;
 
-	protected WEWandCommandWrapper(Config config, Command originalcommand) {
-		super(originalcommand.getName(), originalcommand.getDescription(), originalcommand.getUsage(), originalcommand.getAliases());
+	protected WEWandCommandWrapper(Config config, Command originalCmd) {
+		super(originalCmd.getName(), originalCmd.getDescription(), originalCmd.getUsage(), originalCmd.getAliases());
 		this.config = config;
-		this.originalcommand = originalcommand;
+		this.originalCmd = originalCmd;
 	}
 
 	@Override
 	public boolean execute(CommandSender sender, String label, String[] args) {
 		if (!config.extendedWorldEditWandEnabled) {
-			return originalcommand.execute(sender, label, args);
+			return originalCmd.execute(sender, label, args);
 		}
-		if (sender instanceof Player) {
-			((Player) sender).getInventory().addItem(WEWand.getWand());
-			sender.sendMessage(ChatColor.LIGHT_PURPLE+"Выдана вещь для выделения территории");
+		if (sender instanceof Player player) {
+			player.getInventory().addItem(WEWand.getWand());
+			player.sendMessage(ChatColor.LIGHT_PURPLE+"Выдана вещь для выделения территории");
 		}
 		return true;
 	}

@@ -17,7 +17,6 @@
 
 package wgextender.features.regionprotect.regionbased;
 
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
@@ -39,55 +38,27 @@ public class LiquidFlow implements Listener {
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void onLiquidFlow(BlockFromToEvent event) {
-		Block b = event.getBlock();
-		switch (b.getType()) {
-			case LAVA -> {
-				if (config.checkLavaFlow) {
-					check(b.getLocation(), event.getToBlock().getLocation(), event);
-				}
-			}
-			case WATER -> {
-				if (config.checkWaterFlow) {
-					check(b.getLocation(), event.getToBlock().getLocation(), event);
-				}
-			}
-			default -> {
-				if (config.checkOtherLiquidFlow) {
-					check(b.getLocation(), event.getToBlock().getLocation(), event);
-				}
-			}
-		}
+		check(event.getBlock(), event.getToBlock(), event);
 	}
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-	public void onDispenserDispense(BlockDispenseEvent event) {
+	public void onDispense(BlockDispenseEvent event) {
 		Block block = event.getBlock();
 		BlockData blockData = block.getState().getBlockData();
-		if (blockData instanceof Directional) {
-			Block nextBlock = block.getRelative(((Directional) blockData).getFacing());
-			switch (event.getItem().getType()) {
-				case LAVA_BUCKET -> {
-					if (config.checkLavaFlow) {
-						check(block.getLocation(), nextBlock.getLocation(), event);
-					}
-				}
-				case WATER_BUCKET -> {
-					if (config.checkWaterFlow) {
-						check(block.getLocation(), nextBlock.getLocation(), event);
-					}
-				}
-				default -> {
-					if (config.checkOtherLiquidFlow) {
-						check(block.getLocation(), nextBlock.getLocation(), event);
-					}
-				}
-			}
+		if (blockData instanceof Directional directional) {
+			check(block, block.getRelative(directional.getFacing()), event);
 		}
 	}
 
-	protected void check(Location source, Location to, Cancellable event) {
-		if (!WGRegionUtils.isInTheSameRegionOrWild(source, to)) {
-			event.setCancelled(true);
+	private void check(Block source, Block to, Cancellable event) {
+		if (switch (source.getType()) {
+			case LAVA -> config.checkLavaFlow;
+			case WATER -> config.checkWaterFlow;
+			default -> config.checkOtherLiquidFlow;
+		}) {
+			if (!WGRegionUtils.isInTheSameRegionOrWild(source.getLocation(), to.getLocation())) {
+				event.setCancelled(true);
+			}
 		}
 	}
 

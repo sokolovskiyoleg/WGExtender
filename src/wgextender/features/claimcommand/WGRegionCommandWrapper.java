@@ -32,55 +32,55 @@ public class WGRegionCommandWrapper extends Command {
 
 	public static void inject(Config config) {
 		WGRegionCommandWrapper wrapper = new WGRegionCommandWrapper(config, CommandUtils.getCommands().get("region"));
-		CommandUtils.replaceCommand(wrapper.originalcommand, wrapper);
+		CommandUtils.replaceCommand(wrapper.originalCmd, wrapper);
 	}
 
 	public static void uninject() {
 		WGRegionCommandWrapper wrapper = (WGRegionCommandWrapper) CommandUtils.getCommands().get("region");
-		CommandUtils.replaceCommand(wrapper, wrapper.originalcommand);
+		CommandUtils.replaceCommand(wrapper, wrapper.originalCmd);
 	}
 
 	protected final Config config;
-	protected final Command originalcommand;
+	protected final Command originalCmd;
 
-	protected WGRegionCommandWrapper(Config config, Command originalcommand) {
-		super(originalcommand.getName(), originalcommand.getDescription(), originalcommand.getUsage(), originalcommand.getAliases());
+	protected WGRegionCommandWrapper(Config config, Command originalCmd) {
+		super(originalCmd.getName(), originalCmd.getDescription(), originalCmd.getUsage(), originalCmd.getAliases());
 		this.config = config;
-		this.originalcommand = originalcommand;
+		this.originalCmd = originalCmd;
 	}
 
-	private final BlockLimits blocklimits = new BlockLimits();
+	private final BlockLimits blockLimits = new BlockLimits();
 
 	@Override
 	public boolean execute(CommandSender sender, String label, String[] args) {
 		if ((sender instanceof Player player) && (args.length >= 2) && args[0].equalsIgnoreCase("claim")) {
-            String regionname = args[1];
+            String regionName = args[1];
 			if (config.claimExpandSelectionVertical) {
 				boolean result = WEUtils.expandVert((Player) sender);
 				if (result) {
 					player.sendMessage(ChatColor.YELLOW + "Регион автоматически расширен по вертикали");
 				}
 			}
-			ProcessedClaimInfo info = blocklimits.processClaimInfo(config, player);
+			ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
 			if (!info.isClaimAllowed()) {
 				player.sendMessage(ChatColor.RED + "Вы не можете заприватить такой большой регион");
-				if (!info.getMaxSize().equals("-1")) {
+				if (!info.getMaxSize().equals(BlockLimits.RESTRICTED)) {
 					player.sendMessage(ChatColor.RED + "Ваш лимит: "+info.getMaxSize()+", вы попытались заприватить: "+info.getClaimedSize());
 				}
 				return true;
 			}
-			boolean hasRegion = AutoFlags.hasRegion(player.getWorld(), regionname);
+			boolean hasRegion = AutoFlags.hasRegion(player.getWorld(), regionName);
 			try {
-				WEClaimCommand.claim(regionname, sender);
+				WGClaimCommand.claim(regionName, sender);
 				if (!hasRegion && config.claimAutoFlagsEnabled) {
-					AutoFlags.setFlagsForRegion(WGRegionUtils.wrapPlayer(player), player.getWorld(), config, regionname);
+					AutoFlags.setFlagsForRegion(WGRegionUtils.wrapPlayer(player), player.getWorld(), config, regionName);
 				}
 			} catch (CommandException ex) {
 				sender.sendMessage(ChatColor.RED + ex.getMessage());
 			}
 			return true;
 		} else {
-			return originalcommand.execute(sender, label, args);
+			return originalCmd.execute(sender, label, args);
 		}
 	}
 

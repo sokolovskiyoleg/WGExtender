@@ -59,17 +59,10 @@ public class PvPHandlingListener extends WGOverrideListener {
 			return;
 		}
 
-		Location target = event.getTarget();
-		RegionAssociable associable = createRegionAssociable(event.getCause());
-
 		Player playerAttacker = event.getCause().getFirstPlayer();
 		if (playerAttacker == null) {
 			return;
 		}
-
-		LocalPlayer localPlayerAttacker = WorldGuardPlugin.inst().wrapPlayer(playerAttacker);
-		com.sk89q.worldedit.util.Location weTarget = BukkitAdapter.adapt(target);
-		com.sk89q.worldedit.util.Location weAttacker = BukkitAdapter.adapt(playerAttacker.getLocation());
 
 		// Block PvP like normal even if the player has an override permission
 		// because (1) this is a frequent source of confusion and
@@ -83,6 +76,11 @@ public class PvPHandlingListener extends WGOverrideListener {
 
 		boolean canDamage;
 		String what;
+
+		Location target = event.getTarget();
+		RegionAssociable associable = createRegionAssociable(event.getCause());
+		com.sk89q.worldedit.util.Location weTarget = BukkitAdapter.adapt(target);
+		com.sk89q.worldedit.util.Location weAttacker = BukkitAdapter.adapt(playerAttacker.getLocation());
 
 		/* Hostile / ambient mob override */
 		if (
@@ -101,6 +99,7 @@ public class PvPHandlingListener extends WGOverrideListener {
 			/* PVP */
 		} else if (pvp) {
 			Player defender = (Player) event.getEntity();
+			LocalPlayer localPlayerAttacker = WorldGuardPlugin.inst().wrapPlayer(playerAttacker);
 
 			// add possibility to change how pvp none flag works
 			// null - default wg pvp logic
@@ -124,7 +123,7 @@ public class PvPHandlingListener extends WGOverrideListener {
 
 			}
 
-			// Fire the disallow PVP event
+			// Fire disallow PVP event
 			if (!canDamage && Events.fireAndTestCancel(new DisallowedPVPEvent(playerAttacker, defender, event.getOriginalEvent()))) {
 				canDamage = true;
 			}
@@ -158,14 +157,14 @@ public class PvPHandlingListener extends WGOverrideListener {
 
 		if (!cause.isKnown()) {
 			return Associables.constant(Association.NON_MEMBER);
-		} else if (rootCause instanceof Player) {
-			return WorldGuardPlugin.inst().wrapPlayer((Player) rootCause);
-		} else if (rootCause instanceof OfflinePlayer) {
-			return WorldGuardPlugin.inst().wrapOfflinePlayer((OfflinePlayer) rootCause);
-		} else if (rootCause instanceof Entity) {
-			return new DelayedRegionOverlapAssociation(WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(((Entity) rootCause).getLocation()));
-		} else if (rootCause instanceof Block) {
-			return new DelayedRegionOverlapAssociation(WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(((Block) rootCause).getLocation()));
+		} else if (rootCause instanceof Player player) {
+			return WorldGuardPlugin.inst().wrapPlayer(player);
+		} else if (rootCause instanceof OfflinePlayer offlinePlayer) {
+			return WorldGuardPlugin.inst().wrapOfflinePlayer(offlinePlayer);
+		} else if (rootCause instanceof Entity entity) {
+			return new DelayedRegionOverlapAssociation(WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(entity.getLocation()));
+		} else if (rootCause instanceof Block block) {
+			return new DelayedRegionOverlapAssociation(WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(block.getLocation()));
 		} else {
 			return Associables.constant(Association.NON_MEMBER);
 		}
@@ -174,8 +173,8 @@ public class PvPHandlingListener extends WGOverrideListener {
 	private boolean isWhitelisted(Cause cause, World world, boolean pvp) {
 		Object rootCause = cause.getRootCause();
 
-		if (rootCause instanceof Block) {
-			Material type = ((Block) rootCause).getType();
+		if (rootCause instanceof Block block) {
+			Material type = block.getType();
 			return (type == Material.HOPPER) || (type == Material.DROPPER);
 		} else if (rootCause instanceof Player player) {
 			if (WGRegionUtils.getWorldConfig(world).fakePlayerBuildOverride && InteropUtils.isFakePlayer(player)) {
@@ -190,7 +189,6 @@ public class PvPHandlingListener extends WGOverrideListener {
 	private static final String DENY_MESSAGE_KEY = "worldguard.region.lastMessage";
 	private static final int LAST_MESSAGE_DELAY = 500;
 
-	@SuppressWarnings("deprecation")
 	private void tellErrorMessage(DelegateEvent event, Cause cause, Location location, String what) {
 		if (event.isSilent() || cause.isIndirect()) {
 			return;
@@ -202,6 +200,7 @@ public class PvPHandlingListener extends WGOverrideListener {
 			long now = System.currentTimeMillis();
 			Long lastTime = WGMetadata.getIfPresent(player, DENY_MESSAGE_KEY, Long.class);
 			if ((lastTime == null) || ((now - lastTime) >= LAST_MESSAGE_DELAY)) {
+				@SuppressWarnings("deprecation")
 				String message = WGRegionUtils.REGION_QUERY.queryValue(BukkitAdapter.adapt(location), WorldGuardPlugin.inst().wrapPlayer(player), Flags.DENY_MESSAGE);
 				if ((message != null) && !message.isEmpty()) {
 					player.sendMessage(message.replace("%what%", what));

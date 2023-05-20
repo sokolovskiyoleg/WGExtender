@@ -58,7 +58,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 //TODO: refactor
-@SuppressWarnings("deprecation")
 public class Commands implements CommandExecutor, TabCompleter {
 
 	protected final Config config;
@@ -167,9 +166,9 @@ public class Commands implements CommandExecutor, TabCompleter {
 					if (args.length != 2) {
 						return false;
 					}
-					OfflinePlayer oplayer = Bukkit.getOfflinePlayer(args[1]);
-					String name = oplayer.getName();
-					UUID uuid = oplayer.getUniqueId();
+					OfflinePlayer offPlayer = Bukkit.getOfflinePlayer(args[1]);
+					String name = offPlayer.getName();
+					UUID uuid = offPlayer.getUniqueId();
 					for (RegionManager manager : WGRegionUtils.getRegionContainer().getLoaded()) {
 						for (ProtectedRegion region : manager.getRegions().values()) {
 							DefaultDomain owners = region.getMembers();

@@ -17,14 +17,6 @@
 
 package wgextender.features.claimcommand;
 
-import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.bukkit.World;
-
 import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
@@ -34,27 +26,33 @@ import com.sk89q.worldguard.commands.region.RegionCommands;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-
+import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.chars.CharSet;
+import it.unimi.dsi.fastutil.chars.CharSets;
+import org.bukkit.World;
 import wgextender.Config;
 import wgextender.utils.WGRegionUtils;
 
-@SuppressWarnings("deprecation")
-public class AutoFlags {
+import java.lang.reflect.Method;
+import java.util.Map.Entry;
 
-	protected static boolean hasRegion(final World world, final String regionname) {
-		return getRegion(world, regionname) != null;
+public class AutoFlags {
+	private AutoFlags() {}
+
+	protected static boolean hasRegion(final World world, final String regionName) {
+		return getRegion(world, regionName) != null;
 	}
 
-	protected static ProtectedRegion getRegion(final World world, final String regionname) {
+	protected static ProtectedRegion getRegion(final World world, final String regionName) {
 		final RegionManager rm = WGRegionUtils.getRegionManager(world);
 		if (rm == null) {
 			return null;
 		}
-		return rm.getRegion(regionname);
+		return rm.getRegion(regionName);
 	}
 
-	protected static void setFlagsForRegion(Actor actor, final World world, final Config config, final String regionname) {
-		final ProtectedRegion rg = getRegion(world, regionname);
+	protected static void setFlagsForRegion(Actor actor, final World world, final Config config, final String regionName) {
+		final ProtectedRegion rg = getRegion(world, regionName);
 		if (rg != null) {
 			for (Entry<Flag<?>, String> entry : config.claimAutoFlags.entrySet()) {
 				try {
@@ -67,19 +65,18 @@ public class AutoFlags {
 	}
 
 	protected static final RegionCommands regionCommands = new RegionCommands(WorldGuard.getInstance());
-	protected static final Set<Character> flagCommandValueFlags = getFlagCommandValueFlags();
+	protected static final CharSet flagCommandValueFlags = getFlagCommandValueFlags();
 	public static <T> void setFlag(Actor actor, World world, ProtectedRegion region, Flag<T> flag, String value) throws CommandException {
 		CommandContext ccontext = new CommandContext(String.format("flag %s -w %s %s %s", region.getId(), world.getName(), flag.getName(), value), flagCommandValueFlags);
 		regionCommands.flag(ccontext, actor);
 	}
 
-
-	protected static Set<Character> getFlagCommandValueFlags() {
+	protected static CharSet getFlagCommandValueFlags() {
 		try {
 			Method method = RegionCommands.class.getMethod("flag", CommandContext.class, Actor.class);
 			Command annotation = method.getAnnotation(Command.class);
 			char[] flags = annotation.flags().toCharArray();
-			Set<Character> valueFlags = new HashSet<>();
+			CharSet valueFlags = new CharOpenHashSet();
 			for (int i = 0; i < flags.length; ++i) {
 				if ((flags.length > (i + 1)) && (flags[i + 1] == ':')) {
 					valueFlags.add(flags[i]);
@@ -89,7 +86,7 @@ public class AutoFlags {
 			return valueFlags;
 		} catch (Throwable t) {
 			t.printStackTrace();
-			return Collections.emptySet();
+			return CharSets.emptySet();
 		}
 	}
 

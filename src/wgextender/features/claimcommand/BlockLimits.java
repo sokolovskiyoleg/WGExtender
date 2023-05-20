@@ -28,6 +28,8 @@ import wgextender.utils.WEUtils;
 import java.math.BigInteger;
 
 public class BlockLimits {
+	private static final BigInteger MAX_VALUE = BigInteger.valueOf(Integer.MAX_VALUE);
+	public static final BigInteger RESTRICTED = BigInteger.valueOf(-1);
 
 	public ProcessedClaimInfo processClaimInfo(Config config, Player player) {
 		ProcessedClaimInfo info = new ProcessedClaimInfo();
@@ -40,12 +42,12 @@ public class BlockLimits {
 		BlockVector3 min = psel.getMinimumPoint();
 		BlockVector3 max = psel.getMaximumPoint();
 		BigInteger size = BigInteger.ONE;
-		size = size.multiply(BigInteger.valueOf(max.getBlockX()).subtract(BigInteger.valueOf(min.getBlockX())).add(BigInteger.ONE));
-		size = size.multiply(BigInteger.valueOf(max.getBlockZ()).subtract(BigInteger.valueOf(min.getBlockZ())).add(BigInteger.ONE));
-		size = size.multiply(BigInteger.valueOf(max.getBlockY()).subtract(BigInteger.valueOf(min.getBlockY())).add(BigInteger.ONE));
-		if (size.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+		size = size.multiply(distance(min.getBlockX(), max.getBlockX()));
+		size = size.multiply(distance(min.getBlockY(), max.getBlockY()));
+		size = size.multiply(distance(min.getBlockZ(), max.getBlockZ()));
+		if (size.compareTo(MAX_VALUE) > 0) {
 			info.disallow();
-			info.setInfo(size, BigInteger.valueOf(-1));
+			info.setInfo(size, RESTRICTED);
 			return info;
 		}
 		if (config.claimBlockLimitsEnabled) {
@@ -56,17 +58,17 @@ public class BlockLimits {
 			if (pgroups.length == 0) {
 				return info;
 			}
-			int maxblocks = 0;
+			int maxBlocks = 0;
 			for (String pgroup : pgroups) {
 				pgroup = pgroup.toLowerCase();
 				if (config.claimBlockLimits.containsKey(pgroup)) {
-					maxblocks = Math.max(maxblocks, config.claimBlockLimits.get(pgroup));
+					maxBlocks = Math.max(maxBlocks, config.claimBlockLimits.get(pgroup));
 				}
 			}
-			BigInteger maxblocksi = BigInteger.valueOf(maxblocks);
-			if (size.compareTo(maxblocksi) > 0) {
+			BigInteger maxBlocksi = BigInteger.valueOf(maxBlocks);
+			if (size.compareTo(maxBlocksi) > 0) {
 				info.disallow();
-				info.setInfo(size, maxblocksi);
+				info.setInfo(size, maxBlocksi);
 				return info;
 			}
 		}
@@ -77,7 +79,7 @@ public class BlockLimits {
 
 		private boolean claimAllowed = true;
 		private BigInteger size;
-		private BigInteger maxsize;
+		private BigInteger maxSize;
 
 		public void disallow() {
 			claimAllowed = false;
@@ -89,17 +91,20 @@ public class BlockLimits {
 
 		public void setInfo(BigInteger claimed, BigInteger max) {
 			size = claimed;
-			maxsize = max;
+			maxSize = max;
 		}
 
-		public String getClaimedSize() {
-			return size.toString();
+		public BigInteger getClaimedSize() {
+			return size;
 		}
 
-		public String getMaxSize() {
-			return maxsize.toString();
+		public BigInteger getMaxSize() {
+			return maxSize;
 		}
 
 	}
 
+	private static BigInteger distance(long min, long max) {
+		return BigInteger.valueOf(Math.max(max - min, 1));
+	}
 }

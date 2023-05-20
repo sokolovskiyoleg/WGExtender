@@ -22,7 +22,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockSpreadEvent;
-
 import wgextender.Config;
 import wgextender.utils.WGRegionUtils;
 
@@ -39,6 +38,7 @@ public class FireSpread implements Listener {
 			if (config.checkFireSpreadToRegion) {
 				if (!WGRegionUtils.isInTheSameRegionOrWild(event.getSource().getLocation(), event.getBlock().getLocation())) {
 					event.setCancelled(true);
+					return;
 				}
 			}
 			if (config.disableFireSpreadInRegion) {

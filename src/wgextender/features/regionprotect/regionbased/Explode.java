@@ -73,8 +73,8 @@ public class Explode implements Listener {
 		if ((e.getCause() == DamageCause.BLOCK_EXPLOSION) || (e.getCause() == DamageCause.ENTITY_EXPLOSION)) {
 			Location locaiton = e.getEntity().getLocation();
 			if (WGRegionUtils.isInWGRegion(locaiton)) {
-				if (e instanceof EntityDamageByEntityEvent) {
-					Player source = findExplosionSource(((EntityDamageByEntityEvent) e).getDamager());
+				if (e instanceof EntityDamageByEntityEvent byEntityEvent) {
+					Player source = findExplosionSource(byEntityEvent.getDamager());
 					if ((source == null) || (!WGRegionUtils.canBypassProtection(source) && !WGRegionUtils.canBuild(source, locaiton))) {
 						e.setCancelled(true);
 					}

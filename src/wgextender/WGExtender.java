@@ -22,15 +22,11 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import wgextender.commands.Commands;
 import wgextender.features.claimcommand.WGRegionCommandWrapper;
-import wgextender.features.custom.OldPVPFlagsHandler;
 import wgextender.features.extendedwand.WEWandCommandWrapper;
 import wgextender.features.extendedwand.WEWandListener;
-import wgextender.features.flags.ChorusFruitUseFlag;
-import wgextender.features.flags.FlagRegistration;
-import wgextender.features.flags.OldPVPAttackSpeedFlag;
-import wgextender.features.flags.OldPVPNoBowFlag;
-import wgextender.features.flags.OldPVPNoShieldBlockFlag;
-import wgextender.features.regionprotect.ownormembased.ChorusFruitFlagHandler;
+import wgextender.features.flags.ChorusFruitFlagHandler;
+import wgextender.features.flags.OldPVPFlagsHandler;
+import wgextender.features.flags.WGExtenderFlags;
 import wgextender.features.regionprotect.ownormembased.PvPHandlingListener;
 import wgextender.features.regionprotect.ownormembased.RestrictCommands;
 import wgextender.features.regionprotect.regionbased.BlockBurn;
@@ -58,10 +54,6 @@ public class WGExtender extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		VaultIntegration.getInstance().initialize(this);
-		ChorusFruitUseFlag.assignInstance();
-		OldPVPAttackSpeedFlag.assignInstance();
-		OldPVPNoShieldBlockFlag.assignInstance();
-		OldPVPNoBowFlag.assignInstance();
 		Config config = new Config(this);
 		config.loadConfig();
 		Objects.requireNonNull(getCommand("wgex")).setExecutor(new Commands(config));
@@ -76,10 +68,7 @@ public class WGExtender extends JavaPlugin {
 		try {
 			WGRegionCommandWrapper.inject(config);
 			WEWandCommandWrapper.inject(config);
-			FlagRegistration.registerFlag(ChorusFruitUseFlag.getInstance());
-			FlagRegistration.registerFlag(OldPVPAttackSpeedFlag.getInstance());
-			FlagRegistration.registerFlag(OldPVPNoShieldBlockFlag.getInstance());
-			FlagRegistration.registerFlag(OldPVPNoBowFlag.getInstance());
+			WGExtenderFlags.registerFlags();
 			pvplistener = new PvPHandlingListener(config);
 			pvplistener.inject();
 			oldpvphandler = new OldPVPFlagsHandler();

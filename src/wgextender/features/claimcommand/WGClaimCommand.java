@@ -21,8 +21,7 @@ import org.bukkit.entity.Player;
 import wgextender.utils.WEUtils;
 import wgextender.utils.WGRegionUtils;
 
-@SuppressWarnings("deprecation")
-public class WEClaimCommand {
+public class WGClaimCommand {
 
 	protected static void claim(String id, CommandSender sender) throws CommandException {
 		if (!(sender instanceof Player player)) {
