@@ -42,7 +42,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.bukkit.util.StringUtil;
 import wgextender.Config;
 import wgextender.features.claimcommand.AutoFlags;
 import wgextender.utils.Transform;
@@ -56,6 +55,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import static org.bukkit.util.StringUtil.copyPartialMatches;
 
 //TODO: refactor
 public class Commands implements CommandExecutor, TabCompleter {
@@ -117,63 +118,46 @@ public class Commands implements CommandExecutor, TabCompleter {
 						return false;
 					}
 					World world = Bukkit.getWorld(args[1]);
-					if (world != null) {
-						Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), args[2]);
-						if (flag != null) {
-							try {
-								String value = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
-								for (ProtectedRegion region : WGRegionUtils.getRegionManager(world).getRegions().values()) {
-									if (region instanceof GlobalProtectedRegion) {
-										continue;
-									}
-									AutoFlags.setFlag(WGRegionUtils.wrapAsPrivileged(sender), world, region, flag, value);
-								}
-								sender.sendMessage(ChatColor.BLUE + "Флаги установлены");
-							} catch (CommandException e) {
-								sender.sendMessage(ChatColor.BLUE + "Неправильный формат флага " + flag.getName() + ": " + e.getMessage());
-							}
-						} else {
-							sender.sendMessage(ChatColor.BLUE + "Флаг не найден");
-						}
-					} else {
+					if (world == null) {
 						sender.sendMessage(ChatColor.BLUE + "Мир не найден");
+						return true;
 					}
-					return true;
-				}
-				case "removeowner" -> {
-					if (args.length != 2) {
-						return false;
+					Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), args[2]);
+					if (flag == null) {
+						sender.sendMessage(ChatColor.BLUE + "Флаг не найден");
+						return true;
 					}
-					OfflinePlayer oplayer = Bukkit.getOfflinePlayer(args[1]);
-					String name = oplayer.getName();
-					UUID uuid = oplayer.getUniqueId();
-					for (RegionManager manager : WGRegionUtils.getRegionContainer().getLoaded()) {
-						for (ProtectedRegion region : manager.getRegions().values()) {
-							DefaultDomain owners = region.getOwners();
-							owners.removePlayer(uuid);
-							owners.removePlayer(name.toLowerCase());
-							region.setOwners(owners);
+					try {
+						String value = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+						for (ProtectedRegion region : WGRegionUtils.getRegionManager(world).getRegions().values()) {
+							if (region instanceof GlobalProtectedRegion) {
+								continue;
+							}
+							AutoFlags.setFlag(WGRegionUtils.wrapAsPrivileged(sender), world, region, flag, value);
 						}
+						sender.sendMessage(ChatColor.BLUE + "Флаги установлены");
+					} catch (CommandException e) {
+						sender.sendMessage(ChatColor.BLUE + "Неправильный формат флага " + flag.getName() + ": " + e.getMessage());
 					}
-					sender.sendMessage(ChatColor.BLUE + "Игрок удалён из списков владельцев всех регионов");
 					return true;
 				}
-				case "removemember" -> {
+				case "removeowner", "removemember" -> {
 					if (args.length != 2) {
 						return false;
 					}
+					boolean owner = args[0].equals("removeowner");
 					OfflinePlayer offPlayer = Bukkit.getOfflinePlayer(args[1]);
-					String name = offPlayer.getName();
+					String name = (offPlayer.getName() == null ? args[1] : offPlayer.getName()).toLowerCase();
 					UUID uuid = offPlayer.getUniqueId();
 					for (RegionManager manager : WGRegionUtils.getRegionContainer().getLoaded()) {
 						for (ProtectedRegion region : manager.getRegions().values()) {
-							DefaultDomain owners = region.getMembers();
-							owners.removePlayer(uuid);
-							owners.removePlayer(name.toLowerCase());
-							region.setMembers(owners);
+							DefaultDomain members = owner ? region.getOwners() : region.getMembers();
+							members.removePlayer(uuid);
+							members.removePlayer(name);
+							region.setMembers(members);
 						}
 					}
-					sender.sendMessage(ChatColor.BLUE + "Игрок удалён из списков членов всех регионов");
+					sender.sendMessage(ChatColor.BLUE + "Игрок удалён из списков " + (owner ? "владельцев" : "участников") + " всех регионов");
 					return true;
 				}
 			}
@@ -183,11 +167,11 @@ public class Commands implements CommandExecutor, TabCompleter {
 
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
-		if (!sender.hasPermission("wgextender.admin")) {
+		if (args.length == 0 || !sender.hasPermission("wgextender.admin")) {
 			return Collections.emptyList();
 		}
 		if (args.length == 1) {
-			return StringUtil.copyPartialMatches(
+			return copyPartialMatches(
 					args[0],
 					sender instanceof Player
 							? List.of("help", "reload", "search", "setflag", "removeowner", "removemember")
@@ -195,36 +179,26 @@ public class Commands implements CommandExecutor, TabCompleter {
 					new ArrayList<>()
 			);
 		}
-		if (args.length >= 2) {
-			switch (args[0].toLowerCase()) {
-				case "help", "reload", "search" -> {
-					return Collections.emptyList();
+		if (!"setflag".equalsIgnoreCase(args[0])) return Collections.emptyList();
+		switch (args.length) {
+			case 2 -> {
+				return copyPartialMatches(args[1], Transform.toList(Bukkit.getWorlds(), World::getName), new ArrayList<>());
+			}
+			case 3 -> {
+				return copyPartialMatches(args[2], Transform.toList(WorldGuard.getInstance().getFlagRegistry(), Flag::getName), new ArrayList<>());
+			}
+			case 4 -> {
+				Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), args[2]);
+				if (flag instanceof StateFlag) {
+					return copyPartialMatches(args[3], Transform.toList(State.values(), State::toString), new ArrayList<>());
 				}
-				case "setflag" -> {
-					switch (args.length) {
-						case 2 -> {
-							return StringUtil.copyPartialMatches(args[1], Transform.toList(Bukkit.getWorlds(), World::getName), new ArrayList<>());
-						}
-						case 3 -> {
-							return StringUtil.copyPartialMatches(args[2], Transform.toList(WorldGuard.getInstance().getFlagRegistry(), Flag::getName), new ArrayList<>());
-						}
-						case 4 -> {
-							Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), args[2]);
-							if (flag instanceof StateFlag) {
-								return StringUtil.copyPartialMatches(args[3], Transform.toList(State.values(), State::toString), new ArrayList<>());
-							}
-							if (flag instanceof BooleanFlag) {
-								return StringUtil.copyPartialMatches(args[3], List.of("true", "false"), new ArrayList<>());
-							}
-							if (flag instanceof EnumFlag<?>) {
-								try {
-									return StringUtil.copyPartialMatches(args[3], Transform.toList(((EnumFlag<? extends Enum<?>>) flag).getEnumClass().getEnumConstants(), Enum::toString), new ArrayList<>());
-								} catch (Exception ignored) {
-								}
-							}
-						}
-					}
-					return Collections.emptyList();
+				if (flag instanceof BooleanFlag) {
+					return copyPartialMatches(args[3], List.of("true", "false"), new ArrayList<>());
+				}
+				if (flag instanceof EnumFlag<?> enumFlag) {
+					try {
+						return copyPartialMatches(args[3], Transform.toList(enumFlag.getEnumClass().getEnumConstants(), Enum::toString), new ArrayList<>());
+					} catch (Exception ignored) { }
 				}
 			}
 		}
