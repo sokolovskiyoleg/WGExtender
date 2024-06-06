@@ -6,7 +6,7 @@
 
     <groupId>org.hurricanegames</groupId>
     <artifactId>wgextender</artifactId>
-    <version>3.1</version>
+    <version>3.1.1-fork</version>
     <packaging>jar</packaging>
 
     <name>WGExtender</name>
