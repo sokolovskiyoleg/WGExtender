@@ -37,6 +37,7 @@ public class CommandUtils {
 			return Collections.singletonList(commandName);
 		} else {
 			List<String> aliases = new ArrayList<>();
+			aliases.add(commandName);
 			for (Entry<String, Command> entry : getCommands().entrySet()) {
 				if (entry.getValue().equals(command)) {
 					aliases.add(entry.getKey());
@@ -47,9 +48,14 @@ public class CommandUtils {
 	}
 
 	public static void replaceCommand(Command oldCommand, Command newCommand) {
-		for (Entry<String, Command> entry : getCommands().entrySet()) {
-			if (entry.getValue().equals(oldCommand)) {
-				entry.setValue(newCommand);
+		String cmdName = oldCommand.getName();
+		var commandMap = getCommands();
+		if (commandMap.get(cmdName).equals(oldCommand)) {
+			commandMap.put(cmdName, newCommand);
+		}
+		for (String alias : oldCommand.getAliases()) {
+			if (commandMap.get(alias).equals(oldCommand)) {
+				commandMap.put(alias, newCommand);
 			}
 		}
 	}
