@@ -40,9 +40,9 @@ public class BlockLimits {
 		BlockVector3 min = selection.getMinimumPoint();
 		BlockVector3 max = selection.getMaximumPoint();
 
-		BigInteger yDistance = distance(min.getBlockY(), max.getBlockY());
-		BigInteger xDistance = distance(min.getBlockX(), max.getBlockX());
-		BigInteger zDistance = distance(min.getBlockZ(), max.getBlockZ());
+		BigInteger yDistance = distance(min.y(), max.y());
+		BigInteger xDistance = distance(min.x(), max.x());
+		BigInteger zDistance = distance(min.z(), max.z());
 		BigInteger minHorizontal = xDistance.min(zDistance);
 
 		BigInteger volume = BigInteger.ONE
