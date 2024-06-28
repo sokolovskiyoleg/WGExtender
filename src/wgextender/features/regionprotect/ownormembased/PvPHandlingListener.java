@@ -39,7 +39,10 @@ import java.util.List;
 
 public class PvPHandlingListener extends WGOverrideListener {
 
-	protected final Config config;
+	private final Config config;
+
+	private static final String DENY_MESSAGE_KEY = "worldguard.region.lastMessage";
+	private static final int LAST_MESSAGE_DELAY = 500;
 
 	public PvPHandlingListener(Config config) {
 		this.config = config;
@@ -153,26 +156,25 @@ public class PvPHandlingListener extends WGOverrideListener {
 	}
 
 	private RegionAssociable createRegionAssociable(Cause cause) {
-		Object rootCause = cause.getRootCause();
-
 		if (!cause.isKnown()) {
 			return Associables.constant(Association.NON_MEMBER);
-		} else if (rootCause instanceof Player player) {
-			return WorldGuardPlugin.inst().wrapPlayer(player);
-		} else if (rootCause instanceof OfflinePlayer offlinePlayer) {
-			return WorldGuardPlugin.inst().wrapOfflinePlayer(offlinePlayer);
-		} else if (rootCause instanceof Entity entity) {
-			return new DelayedRegionOverlapAssociation(WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(entity.getLocation()));
-		} else if (rootCause instanceof Block block) {
-			return new DelayedRegionOverlapAssociation(WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(block.getLocation()));
-		} else {
-			return Associables.constant(Association.NON_MEMBER);
 		}
+
+        return switch (cause.getRootCause()) {
+            case Player player -> WorldGuardPlugin.inst().wrapPlayer(player);
+            case OfflinePlayer offlinePlayer -> WorldGuardPlugin.inst().wrapOfflinePlayer(offlinePlayer);
+            case Entity entity -> new DelayedRegionOverlapAssociation(
+					WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(entity.getLocation())
+			);
+            case Block block -> new DelayedRegionOverlapAssociation(
+					WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(block.getLocation())
+			);
+            case null, default -> Associables.constant(Association.NON_MEMBER);
+        };
 	}
 
 	private boolean isWhitelisted(Cause cause, World world, boolean pvp) {
 		Object rootCause = cause.getRootCause();
-
 		if (rootCause instanceof Block block) {
 			Material type = block.getType();
 			return (type == Material.HOPPER) || (type == Material.DROPPER);
@@ -186,17 +188,12 @@ public class PvPHandlingListener extends WGOverrideListener {
 		}
 	}
 
-	private static final String DENY_MESSAGE_KEY = "worldguard.region.lastMessage";
-	private static final int LAST_MESSAGE_DELAY = 500;
-
 	private void tellErrorMessage(DelegateEvent event, Cause cause, Location location, String what) {
 		if (event.isSilent() || cause.isIndirect()) {
 			return;
 		}
 
-		Object rootCause = cause.getRootCause();
-
-		if (rootCause instanceof Player player) {
+		if (cause.getRootCause() instanceof Player player) {
 			long now = System.currentTimeMillis();
 			Long lastTime = WGMetadata.getIfPresent(player, DENY_MESSAGE_KEY, Long.class);
 			if ((lastTime == null) || ((now - lastTime) >= LAST_MESSAGE_DELAY)) {
@@ -218,5 +215,4 @@ public class PvPHandlingListener extends WGOverrideListener {
 		}
 		return flags;
 	}
-
 }

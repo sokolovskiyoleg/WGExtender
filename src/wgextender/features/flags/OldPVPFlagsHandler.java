@@ -3,6 +3,7 @@ package wgextender.features.flags;
 import com.google.common.base.Function;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
@@ -16,16 +17,12 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.plugin.Plugin;
 import wgextender.WGExtender;
-import wgextender.utils.ReflectionUtils;
 import wgextender.utils.WGRegionUtils;
 
 import java.lang.reflect.Field;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 
 public class OldPVPFlagsHandler implements Listener {
@@ -33,13 +30,25 @@ public class OldPVPFlagsHandler implements Listener {
 	private static final Set<EntityDamageEvent.DamageModifier> PVP_MODIFIERS = EnumSet.of(
 			DamageModifier.ARMOR, DamageModifier.RESISTANCE, DamageModifier.MAGIC, DamageModifier.ABSORPTION
 	);
-	protected final Map<UUID, Double> oldValues = new HashMap<>();
-	protected Field functionsField;
+	private final Map<UUID, Double> oldValues = new HashMap<>();
+	private Field functionsField;
 
-	public void start() {
-		functionsField = ReflectionUtils.getField(EntityDamageEvent.class, "modifierFunctions");
-		Bukkit.getPluginManager().registerEvents(this, WGExtender.getInstance());
-		Bukkit.getScheduler().runTaskTimer(WGExtender.getInstance(), () -> {
+	public void start(Plugin plugin) {
+        try {
+            functionsField = EntityDamageEvent.class.getDeclaredField("modifierFunctions");
+			functionsField.setAccessible(true);
+        } catch (Exception ex) {
+            plugin.getLogger().log(
+					Level.SEVERE,
+					"Couldn't get access to 'modifierFunctions' field. Old PvP flags will not be enabled",
+					ex
+			);
+			return;
+        }
+
+		Server server = plugin.getServer();
+		server.getPluginManager().registerEvents(this, plugin);
+		server.getScheduler().runTaskTimer(WGExtender.getInstance(), () -> {
 			for (Player player : Bukkit.getOnlinePlayers()) {
 				if (WGRegionUtils.isFlagTrue(player.getLocation(), WGExtenderFlags.OLDPVP_ATTACKSPEED)) {
 					if (!oldValues.containsKey(player.getUniqueId())) {
@@ -60,16 +69,16 @@ public class OldPVPFlagsHandler implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST)
-	public void onQuit(PlayerQuitEvent event) {
-		reset(event.getPlayer());
-	}
-
 	private void reset(Player player) {
 		Double oldValue = oldValues.remove(player.getUniqueId());
 		if (oldValue != null) {
 			player.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(oldValue);
 		}
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void onQuit(PlayerQuitEvent event) {
+		reset(event.getPlayer());
 	}
 
 	@SuppressWarnings({"unchecked", "deprecation"})
@@ -109,5 +118,4 @@ public class OldPVPFlagsHandler implements Listener {
 			event.setCancelled(true);
 		}
 	}
-
 }

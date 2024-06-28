@@ -52,6 +52,11 @@ public class WGExtender extends JavaPlugin {
 	private OldPVPFlagsHandler oldpvphandler;
 
 	@Override
+	public void onLoad() {
+		WGExtenderFlags.registerFlags(getLogger());
+	}
+
+	@Override
 	public void onEnable() {
 		VaultIntegration.getInstance().initialize(this);
 		Config config = new Config(this);
@@ -68,11 +73,10 @@ public class WGExtender extends JavaPlugin {
 		try {
 			WGRegionCommandWrapper.inject(config);
 			WEWandCommandWrapper.inject(config);
-			WGExtenderFlags.registerFlags();
 			pvplistener = new PvPHandlingListener(config);
 			pvplistener.inject();
 			oldpvphandler = new OldPVPFlagsHandler();
-			oldpvphandler.start();
+			oldpvphandler.start(this);
 		} catch (Throwable t) {
 			getLogger().log(Level.SEVERE, "Unable to inject, shutting down", t);
 			t.printStackTrace();
