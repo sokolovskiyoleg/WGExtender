@@ -54,20 +54,18 @@ public class RestrictCommands implements Listener {
 	}
 
 	private void commandRecheckTask(Config config) {
-		Bukkit.getAsyncScheduler().runAtFixedRate(WGExtender.getInstance(), (task) -> {
-			if (!config.restrictCommandsInRegionEnabled) {
-				return;
+		if (!config.restrictCommandsInRegionEnabled) {
+			return;
+		}
+		Set<String> computedRestrictedCommands = new HashSet<>();
+		for (String restrictedCommand : config.restrictedCommandsInRegion) {
+			String[] split = SPACE_PATTERN.split(restrictedCommand, 2);
+			String toAdd = split.length > 1 ? split[1] : "";
+			for (String alias : CommandUtils.getCommandAliases(split[0].toLowerCase(Locale.ROOT))) {
+				computedRestrictedCommands.add(alias + toAdd);
 			}
-			Set<String> computedRestrictedCommands = new HashSet<>();
-			for (String restrictedCommand : config.restrictedCommandsInRegion) {
-				String[] split = SPACE_PATTERN.split(restrictedCommand, 2);
-				String toAdd = split.length > 1 ? split[1] : "";
-				for (String alias : CommandUtils.getCommandAliases(split[0].toLowerCase(Locale.ROOT))) {
-					computedRestrictedCommands.add(alias + toAdd);
-				}
-			}
-			restrictedCommands = computedRestrictedCommands;
-		}, TICK, TICK * 100, TimeUnit.MILLISECONDS);
+		}
+		restrictedCommands = computedRestrictedCommands;
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
