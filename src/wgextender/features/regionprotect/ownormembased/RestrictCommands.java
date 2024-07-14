@@ -29,37 +29,45 @@ import wgextender.WGExtender;
 import wgextender.utils.CommandUtils;
 import wgextender.utils.WGRegionUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 public class RestrictCommands implements Listener {
-	private static final long MS_PER_TICK = 50;
+	private final Pattern SPACE_PATTERN = Pattern.compile("\\s+");
+	private static final long TICK = 1000 / 20;
 
 	protected final Config config;
-	protected volatile List<String> restrictedCommands;
+	protected volatile Collection<String> restrictedCommands;
 
 	public RestrictCommands(Config config) {
 		this.config = config;
 		restrictedCommands = config.restrictedCommandsInRegion;
-		startCommandRecheckTask(config);
+        Bukkit.getAsyncScheduler().runAtFixedRate(
+                WGExtender.getInstance(),
+                (task) -> commandRecheckTask(config),
+                TICK, TICK * 100, TimeUnit.MILLISECONDS
+        );
 	}
 
-	private void startCommandRecheckTask(Config config) {
+	private void commandRecheckTask(Config config) {
 		Bukkit.getAsyncScheduler().runAtFixedRate(WGExtender.getInstance(), (task) -> {
 			if (!config.restrictCommandsInRegionEnabled) {
 				return;
 			}
-			List<String> computedRestrictedCommands = new ArrayList<>();
+			Set<String> computedRestrictedCommands = new HashSet<>();
 			for (String restrictedCommand : config.restrictedCommandsInRegion) {
-				String[] split = restrictedCommand.split(" ", 2);
-				String toAdd = " " + split[1].trim();
-				for (String alias : CommandUtils.getCommandAliases(split[0])) {
+				String[] split = SPACE_PATTERN.split(restrictedCommand, 2);
+				String toAdd = split.length > 1 ? split[1] : "";
+				for (String alias : CommandUtils.getCommandAliases(split[0].toLowerCase(Locale.ROOT))) {
 					computedRestrictedCommands.add(alias + toAdd);
 				}
 			}
 			restrictedCommands = computedRestrictedCommands;
-		}, MS_PER_TICK, 100 * MS_PER_TICK, TimeUnit.MICROSECONDS);
+		}, TICK, TICK * 100, TimeUnit.MILLISECONDS);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -72,11 +80,11 @@ public class RestrictCommands implements Listener {
 			return;
 		}
 		if (WGRegionUtils.isInWGRegion(player.getLocation()) && !WGRegionUtils.canBuild(player, player.getLocation())) {
-			String message = event.getMessage().substring(1).toLowerCase();
+			String command = event.getMessage().substring(1).toLowerCase(Locale.ROOT);
 			for (String rcommand : restrictedCommands) {
-				if (message.startsWith(rcommand) && ((message.length() == rcommand.length()) || (message.charAt(rcommand.length()) == ' '))) {
+				if (command.startsWith(rcommand) && (command.length() == rcommand.length() || command.charAt(rcommand.length()) == ' ')) {
 					event.setCancelled(true);
-					player.sendMessage(ChatColor.RED + "Вы не можете использовать эту команду на чужом регионе");
+					player.sendMessage(ChatColor.RED + "Вы не можете использовать эту команду в чужом регионе");
 					return;
 				}
 			}

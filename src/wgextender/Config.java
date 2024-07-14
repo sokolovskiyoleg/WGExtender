@@ -57,6 +57,7 @@ public class Config {
 	public boolean checkExplosionEntityDamage = false;
 
 	public boolean claimAutoFlagsEnabled = false;
+	public boolean showAutoFlagMessages = false;
 	public Map<Flag<?>, String> claimAutoFlags = new HashMap<>();
 
 	public boolean restrictCommandsInRegionEnabled = false;
@@ -114,7 +115,8 @@ public class Config {
 		checkExplosionBlockDamage = config.getBoolean("regionprotect.explosion.block", checkExplosionBlockDamage);
 		checkExplosionEntityDamage = config.getBoolean("regionprotect.explosion.entity", checkExplosionEntityDamage);
 
-		claimAutoFlagsEnabled = config.getBoolean("autoflags.enabled",claimAutoFlagsEnabled);
+		claimAutoFlagsEnabled = config.getBoolean("autoflags.enabled", claimAutoFlagsEnabled);
+		showAutoFlagMessages = config.getBoolean("autoflags.show-messages", showAutoFlagMessages);
 		claimAutoFlags.clear();
 		ConfigurationSection autoflagsSection = config.getConfigurationSection("autoflags.flags");
 		if (autoflagsSection != null) {
