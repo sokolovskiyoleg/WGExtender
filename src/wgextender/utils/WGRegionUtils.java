@@ -45,8 +45,7 @@ public class WGRegionUtils {
 		return WorldGuardPlugin.inst().wrapPlayer(player);
 	}
 
-	// TODO Some users may consider hiding messages. Config option?
-	public static Actor wrapAsPrivileged(CommandSender sender) {
+	public static Actor wrapAsPrivileged(CommandSender sender, boolean showMessages) {
 		Actor actor;
 		if (sender instanceof Player player) {
 			actor = wrapPlayer(player);
@@ -57,6 +56,8 @@ public class WGRegionUtils {
 				actor.getClass().getClassLoader(),
 				actor.getClass().getInterfaces(),
 				(proxy, method, args) -> switch (method.getName()) {
+					case "print", "printRaw", "printDebug", "printError", "printInfo" ->
+							showMessages ? method.invoke(actor, args) : null;
 					case "hasPermission" -> true;
 					case "checkPermission" -> null;
 					default -> method.invoke(actor, args);

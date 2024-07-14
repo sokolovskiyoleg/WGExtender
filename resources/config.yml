@@ -22,6 +22,7 @@ regionprotect:
     entity: false
 autoflags:
   enabled: false
+  show-messages: false
   flags: {}
 restrictcommands:
   enabled: false
