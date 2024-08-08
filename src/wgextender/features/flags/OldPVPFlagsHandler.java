@@ -1,9 +1,7 @@
 package wgextender.features.flags;
 
 import com.google.common.base.Function;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
@@ -15,6 +13,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.Plugin;
@@ -27,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 @Deprecated
@@ -51,29 +49,23 @@ public class OldPVPFlagsHandler implements Listener {
 			return;
         }
 
-		Server server = plugin.getServer();
-		server.getPluginManager().registerEvents(this, plugin);
-		server.getAsyncScheduler().runAtFixedRate(plugin, (task) -> {
-			for (Player player : Bukkit.getOnlinePlayers()) {
-				if (WGRegionUtils.isFlagTrue(player.getLocation(), WGExtenderFlags.OLDPVP_ATTACKSPEED)) {
-                    if (oldValues.containsKey(player.getUniqueId())) continue;
-                    player.getScheduler().run(WGExtender.getInstance(), (playerTask) -> {
-                        AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
-                        oldValues.put(player.getUniqueId(), attribute.getBaseValue());
-                        attribute.setBaseValue(16.0);
-                    }, null);
-                } else {
-					player.getScheduler().run(WGExtender.getInstance(), (playerTask) -> {
-						reset(player);
-					}, null);
-				}
-			}
-		}, 0, 50, TimeUnit.MICROSECONDS);
+		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	}
 
-	public void stop() {
-		for (Player player : Bukkit.getOnlinePlayers()) {
-			player.getScheduler().run(WGExtender.getInstance(), playerTask -> reset(player), null);
+	public void stop(Plugin plugin) {
+		for (Player player : plugin.getServer().getOnlinePlayers()) {
+			reset(player);
+		}
+	}
+
+	private void handlePlayer(Player player) {
+		if (WGRegionUtils.isFlagTrue(player.getLocation(), WGExtenderFlags.OLDPVP_ATTACKSPEED)) {
+			if (oldValues.containsKey(player.getUniqueId())) return;
+			AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+			oldValues.put(player.getUniqueId(), attribute.getBaseValue());
+			attribute.setBaseValue(16.0);
+		} else {
+			reset(player);
 		}
 	}
 
@@ -82,6 +74,17 @@ public class OldPVPFlagsHandler implements Listener {
 		if (oldValue != null) {
 			player.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(oldValue);
 		}
+	}
+
+	@EventHandler
+	public void onJoin(PlayerJoinEvent event) {
+		Player player = event.getPlayer();
+		handlePlayer(player);
+		player.getScheduler().runAtFixedRate(WGExtender.getInstance(),
+				(task) -> handlePlayer(player),
+				() -> reset(player),
+				1, 1
+		);
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
