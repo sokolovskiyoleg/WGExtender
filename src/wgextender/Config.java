@@ -67,6 +67,8 @@ public class Config {
 
 	public Boolean miscDefaultPvPFlagOperationMode = null;
 
+	public boolean miscOldPvpFlags = true;
+
 	protected static final String miscPvPFlagOperationModeAllow = "allow";
 	protected static final String miscPvPFlagOperationModeDeny = "deny";
 	protected static final String miscPvPFlagOperationModeDefault = "default";
@@ -141,6 +143,7 @@ public class Config {
 		} else {
 			miscDefaultPvPFlagOperationMode = null;
 		}
+		miscOldPvpFlags = config.getBoolean("misc.old-pvp-flags");
 	}
 
 	private static BigInteger asBig(ConfigurationSection section, String key) {
