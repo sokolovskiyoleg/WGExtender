@@ -12,6 +12,8 @@ import com.sk89q.worldguard.bukkit.protection.events.DisallowedPVPEvent;
 import com.sk89q.worldguard.bukkit.util.Entities;
 import com.sk89q.worldguard.bukkit.util.Events;
 import com.sk89q.worldguard.bukkit.util.InteropUtils;
+import com.sk89q.worldguard.commands.CommandUtils;
+import com.sk89q.worldguard.config.WorldConfiguration;
 import com.sk89q.worldguard.domains.Association;
 import com.sk89q.worldguard.protection.association.Associables;
 import com.sk89q.worldguard.protection.association.DelayedRegionOverlapAssociation;
@@ -29,29 +31,50 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredListener;
 import wgextender.Config;
-import wgextender.features.regionprotect.WGOverrideListener;
 import wgextender.utils.WGRegionUtils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
-public class PvPHandlingListener extends WGOverrideListener {
+public class PvPHandlingListener implements Listener {
 
 	private final Config config;
 
 	private static final String DENY_MESSAGE_KEY = "worldguard.region.lastMessage";
 	private static final int LAST_MESSAGE_DELAY = 500;
 
+	private RegisteredListener origin;
+
 	public PvPHandlingListener(Config config) {
 		this.config = config;
 	}
 
-	@Override
-	protected Class<? extends Listener> getClassToReplace() {
-		return RegionProtectionListener.class;
+	public void inject(Plugin plugin) {
+		HandlerList handlers = DamageEntityEvent.getHandlerList();
+		for (var listener : handlers.getRegisteredListeners()) {
+			if (listener.getListener().getClass().equals(RegionProtectionListener.class)) {
+				origin = listener;
+				break;
+			}
+		}
+		Objects.requireNonNull(origin, "Couldn't find the original RegionProtectionListener");
+		handlers.unregister(origin);
+		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	}
+
+	public void uninject() {
+        if (origin == null) return;
+        HandlerList handlers = DamageEntityEvent.getHandlerList();
+        handlers.unregister(this);
+        handlers.register(origin);
+        origin = null;
+    }
 
 	@EventHandler(ignoreCancelled = true)
 	public void onDamageEntity(DamageEntityEvent event) {
@@ -155,7 +178,7 @@ public class PvPHandlingListener extends WGOverrideListener {
 		}
 	}
 
-	private RegionAssociable createRegionAssociable(Cause cause) {
+	private static RegionAssociable createRegionAssociable(Cause cause) {
 		if (!cause.isKnown()) {
 			return Associables.constant(Association.NON_MEMBER);
 		}
@@ -175,14 +198,19 @@ public class PvPHandlingListener extends WGOverrideListener {
 
 	private boolean isWhitelisted(Cause cause, World world, boolean pvp) {
 		Object rootCause = cause.getRootCause();
+
 		if (rootCause instanceof Block block) {
 			Material type = block.getType();
 			return (type == Material.HOPPER) || (type == Material.DROPPER);
 		} else if (rootCause instanceof Player player) {
-			if (WGRegionUtils.getWorldConfig(world).fakePlayerBuildOverride && InteropUtils.isFakePlayer(player)) {
+            WorldConfiguration config = WGRegionUtils.getWorldConfig(world);
+
+			if (config.fakePlayerBuildOverride && InteropUtils.isFakePlayer(player)) {
 				return true;
 			}
-			return !pvp && WGRegionUtils.canBypassProtection(player);
+
+			LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
+			return !pvp && WGRegionUtils.getPlatform().getSessionManager().hasBypass(localPlayer, localPlayer.getWorld());
 		} else {
 			return false;
 		}
@@ -196,15 +224,21 @@ public class PvPHandlingListener extends WGOverrideListener {
 		if (cause.getRootCause() instanceof Player player) {
 			long now = System.currentTimeMillis();
 			Long lastTime = WGMetadata.getIfPresent(player, DENY_MESSAGE_KEY, Long.class);
-			if ((lastTime == null) || ((now - lastTime) >= LAST_MESSAGE_DELAY)) {
-				@SuppressWarnings("deprecation")
-				String message = WGRegionUtils.REGION_QUERY.queryValue(BukkitAdapter.adapt(location), WorldGuardPlugin.inst().wrapPlayer(player), Flags.DENY_MESSAGE);
-				if (message != null && !message.isEmpty()) {
-					player.sendMessage(message.replace("%what%", what));
-				}
+			if (lastTime == null || now - lastTime >= LAST_MESSAGE_DELAY) {
+				RegionQuery query = WGRegionUtils.getPlatform().getRegionContainer().createQuery();
+				LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
+				String message = query.queryValue(BukkitAdapter.adapt(location), localPlayer, Flags.DENY_MESSAGE);
+				formatAndSendDenyMessage(what, localPlayer, message);
 				WGMetadata.put(player, DENY_MESSAGE_KEY, now);
 			}
 		}
+	}
+
+	private static void formatAndSendDenyMessage(String what, LocalPlayer localPlayer, String message) {
+		if (message == null || message.isEmpty()) return;
+		message = WGRegionUtils.getPlatform().getMatcher().replaceMacros(localPlayer, message);
+		message = CommandUtils.replaceColorMacros(message);
+		localPlayer.printRaw(message.replace("%what%", what));
 	}
 
 	private static StateFlag[] combine(DelegateEvent event, StateFlag... flag) {

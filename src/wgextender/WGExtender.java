@@ -74,7 +74,7 @@ public class WGExtender extends JavaPlugin {
 			WGRegionCommandWrapper.inject(config);
 			WEWandCommandWrapper.inject(config);
 			pvplistener = new PvPHandlingListener(config);
-			pvplistener.inject();
+			pvplistener.inject(this);
 			oldpvphandler = new OldPVPFlagsHandler();
 			oldpvphandler.start(this);
 		} catch (Throwable t) {

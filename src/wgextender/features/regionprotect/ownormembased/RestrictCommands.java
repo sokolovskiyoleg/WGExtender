@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class RestrictCommands implements Listener {
@@ -46,7 +45,7 @@ public class RestrictCommands implements Listener {
 	public RestrictCommands(Config config) {
 		this.config = config;
 		restrictedCommands = config.restrictedCommandsInRegion;
-		Bukkit.getAsyncScheduler().runAtFixedRate(WGExtender.getInstance(), (task) -> {
+		Bukkit.getScheduler().runTaskTimerAsynchronously(WGExtender.getInstance(), () -> {
 			if (!config.restrictCommandsInRegionEnabled) {
 				return;
 			}
@@ -59,7 +58,7 @@ public class RestrictCommands implements Listener {
 				}
 			}
 			restrictedCommands = computedRestrictedCommands;
-		}, TICK, TICK * 100, TimeUnit.MILLISECONDS);
+		}, 1, 100);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
