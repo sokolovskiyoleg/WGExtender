@@ -30,7 +30,7 @@ public class WGClaimCommand {
 		if (id.equalsIgnoreCase("__global__")) {
 			throw new CommandException("Нельзя заприватить __global__.");
 		}
-		if (!ProtectedRegion.isValidId(id)) {
+		if (!ProtectedRegion.isValidId(id) || id.startsWith("-")) {
 			throw new CommandException("Имя региона '" + id + "' содержит запрещённые символы.");
 		}
 
