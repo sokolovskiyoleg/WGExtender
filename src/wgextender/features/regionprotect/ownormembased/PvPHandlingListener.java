@@ -2,6 +2,8 @@ package wgextender.features.regionprotect.ownormembased;
 
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.LocalPlayer;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.BukkitWorldConfiguration;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.bukkit.cause.Cause;
 import com.sk89q.worldguard.bukkit.event.DelegateEvent;
@@ -23,7 +25,6 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.StateFlag.State;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -42,6 +43,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import static wgextender.utils.WGRegionUtils.getWorldConfig;
+
+@SuppressWarnings("all")
+@Deprecated
+/**
+ * Most of this class is just a copy-paste of WG code.
+ * This is a bad pattern, and this should either be refactored or removed entierly
+ */
 public class PvPHandlingListener implements Listener {
 
 	private final Config config;
@@ -56,7 +65,20 @@ public class PvPHandlingListener implements Listener {
 	}
 
 	public void inject(Plugin plugin) {
-		HandlerList handlers = DamageEntityEvent.getHandlerList();
+        if (config.miscDefaultPvPFlagOperationMode == null) {
+            plugin.getLogger().info(
+                    "misc.pvpmode is set to default. Changing it post-initialization will require server " +
+                    "restart, but it's recommended to not this feature because of possible inconsistencies."
+            );
+            return;
+        } else {
+            plugin.getLogger().warning(
+                    "misc.pvpmode is set to '" + config.miscDefaultPvPFlagOperationMode + "'. This may or " +
+                    "may not result in inconsistency with the default WG behavior, since the feature requires " +
+                    "manual copying of WG code."
+            );
+        }
+        HandlerList handlers = DamageEntityEvent.getHandlerList();
 		for (var listener : handlers.getRegisteredListeners()) {
 			if (listener.getListener().getClass().equals(RegionProtectionListener.class)) {
 				origin = listener;
@@ -78,17 +100,17 @@ public class PvPHandlingListener implements Listener {
 
 	@EventHandler(ignoreCancelled = true)
 	public void onDamageEntity(DamageEntityEvent event) {
-		if (event.getResult() == Result.ALLOW) {
-			return;
-		}
-		if (!WGRegionUtils.getWorldConfig(event.getWorld()).useRegions) {
-			return;
-		}
+		if (event.getResult() == Result.ALLOW) return; // Don't care about events that have been pre-allowed
+		if (!getWorldConfig(event.getWorld()).useRegions) return; // Region support disabled
+		// Whitelist check is below
 
+		com.sk89q.worldedit.util.Location target = BukkitAdapter.adapt(event.getTarget());
+		RegionAssociable associable = createRegionAssociable(event.getCause());
+
+		RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
 		Player playerAttacker = event.getCause().getFirstPlayer();
-		if (playerAttacker == null) {
-			return;
-		}
+		boolean canDamage;
+		String what;
 
 		// Block PvP like normal even if the player has an override permission
 		// because (1) this is a frequent source of confusion and
@@ -98,34 +120,28 @@ public class PvPHandlingListener implements Listener {
 			return;
 		}
 
-		RegionQuery query = WGRegionUtils.REGION_QUERY;
-
-		boolean canDamage;
-		String what;
-
-		Location target = event.getTarget();
-		RegionAssociable associable = createRegionAssociable(event.getCause());
-		com.sk89q.worldedit.util.Location weTarget = BukkitAdapter.adapt(target);
-		com.sk89q.worldedit.util.Location weAttacker = BukkitAdapter.adapt(playerAttacker.getLocation());
-
 		/* Hostile / ambient mob override */
-		if (
-			Entities.isHostile(event.getEntity()) ||
-			Entities.isAmbient(event.getEntity()) ||
-			Entities.isVehicle(event.getEntity().getType())
-		) {
-			canDamage = event.getRelevantFlags().isEmpty() || (query.queryState(weTarget, associable, getFlags(event)) != State.DENY);
+		if (Entities.isHostile(event.getEntity()) || Entities.isAmbient(event.getEntity())) {
+			canDamage = event.getRelevantFlags().isEmpty() || query.queryState(target, associable, combine(event)) != State.DENY;
 			what = "hit that";
-
+		} else if (Entities.isVehicle(event.getEntity().getType())) {
+			canDamage = query.testBuild(target, associable, combine(event, Flags.DESTROY_VEHICLE));
+			what = "change that";
 			/* Paintings, item frames, etc. */
 		} else if (Entities.isConsideredBuildingIfUsed(event.getEntity())) {
-			canDamage = query.testBuild(weTarget, associable, getFlags(event));
+			canDamage = query.testBuild(target, associable, combine(event));
 			what = "change that";
 
 			/* PVP */
-		} else if (pvp) {
+		}  else if (pvp) {
+			LocalPlayer localAttacker = WorldGuardPlugin.inst().wrapPlayer(playerAttacker);
 			Player defender = (Player) event.getEntity();
-			LocalPlayer localPlayerAttacker = WorldGuardPlugin.inst().wrapPlayer(playerAttacker);
+			com.sk89q.worldedit.util.Location attackerLocation = BukkitAdapter.adapt(playerAttacker.getLocation());
+
+			// if defender is an NPC
+			if (Entities.isNPC(defender)) {
+				return;
+			}
 
 			// add possibility to change how pvp none flag works
 			// null - default wg pvp logic
@@ -133,20 +149,21 @@ public class PvPHandlingListener implements Listener {
 			// false - disallow pvp when flag not set
 			if (config.miscDefaultPvPFlagOperationMode == null) {
 				canDamage =
-					query.testBuild(weTarget, associable, getFlags(event, Flags.PVP)) &&
-					(query.queryState(weAttacker, localPlayerAttacker, getFlags(event, Flags.PVP)) != State.DENY) &&
-					(query.queryState(weTarget, localPlayerAttacker, getFlags(event, Flags.PVP)) != State.DENY);
+					query.testBuild(target, associable, combine(event, Flags.PVP)) &&
+					(query.queryState(attackerLocation, localAttacker, combine(event, Flags.PVP)) != State.DENY) &&
+					(query.queryState(target, localAttacker, combine(event, Flags.PVP)) != State.DENY);
 			} else if (config.miscDefaultPvPFlagOperationMode) {
 				canDamage =
-					(query.queryState(weAttacker, localPlayerAttacker, getFlags(event, Flags.PVP)) != State.DENY) &&
-					(query.queryState(weTarget, localPlayerAttacker, getFlags(event, Flags.PVP)) != State.DENY);
+					(query.queryState(attackerLocation, localAttacker, combine(event, Flags.PVP)) != State.DENY) &&
+					(query.queryState(target, localAttacker, combine(event, Flags.PVP)) != State.DENY);
 			} else {
-				if (!WGRegionUtils.isInWGRegion(playerAttacker.getLocation()) && !WGRegionUtils.isInWGRegion(target)) {
+				if (!WGRegionUtils.isInWGRegion(playerAttacker.getLocation()) && !WGRegionUtils.isInWGRegion(event.getTarget())) {
 					canDamage = true;
 				} else {
-					canDamage = (query.queryState(weAttacker, localPlayerAttacker, getFlags(event, Flags.PVP)) == State.ALLOW) && (query.queryState(weTarget, localPlayerAttacker, getFlags(event, Flags.PVP)) == State.ALLOW);
+					canDamage =
+							(query.queryState(attackerLocation, localAttacker, combine(event, Flags.PVP)) == State.ALLOW) &&
+							(query.queryState(target, localAttacker, combine(event, Flags.PVP)) == State.ALLOW);
 				}
-
 			}
 
 			// Fire disallow PVP event
@@ -156,76 +173,110 @@ public class PvPHandlingListener implements Listener {
 
 			what = "PvP";
 
-			/* Player damage not caused by another player */
+		/* Player damage not caused  by another player */
 		} else if (event.getEntity() instanceof Player) {
-			canDamage = event.getRelevantFlags().isEmpty() || (query.queryState(weTarget, associable, getFlags(event)) != State.DENY);
+			canDamage = event.getRelevantFlags().isEmpty() || query.queryState(target, associable, combine(event)) != State.DENY;
 			what = "damage that";
 
 			/* damage to non-hostile mobs (e.g. animals) */
 		} else if (Entities.isNonHostile(event.getEntity())) {
-			canDamage = query.testBuild(weTarget, associable, getFlags(event, Flags.DAMAGE_ANIMALS));
+			canDamage = query.testBuild(target, associable, combine(event, Flags.DAMAGE_ANIMALS));
 			what = "harm that";
 
 			/* Everything else */
 		} else {
-			canDamage = query.testBuild(weTarget, associable, getFlags(event, Flags.INTERACT));
+			canDamage = query.testBuild(target, associable, combine(event, Flags.INTERACT));
 			what = "hit that";
 		}
 
 		if (!canDamage) {
-			tellErrorMessage(event, event.getCause(), target, what);
+			tellErrorMessage(event, event.getCause(), event.getTarget(), what);
 			event.setCancelled(true);
 		}
 	}
 
-	private static RegionAssociable createRegionAssociable(Cause cause) {
+	protected RegionAssociable createRegionAssociable(Cause cause) {
+		Object rootCause = cause.getRootCause();
+
 		if (!cause.isKnown()) {
 			return Associables.constant(Association.NON_MEMBER);
+		} else if (rootCause instanceof Player player && !Entities.isNPC(player)) {
+			return WorldGuardPlugin.inst().wrapPlayer(player);
+		} else if (rootCause instanceof OfflinePlayer offlinePlayer) {
+			return WorldGuardPlugin.inst().wrapOfflinePlayer(offlinePlayer);
+		} else if (rootCause instanceof Entity entity) {
+			RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
+			BukkitWorldConfiguration config = getWorldConfig(entity.getWorld());
+			Location loc;
+			if (config.usePaperEntityOrigin) {
+				loc = entity.getOrigin();
+				// Origin world may be null, and thus a Location with a null world created, which cannot be adapted to a WorldEdit location
+				if (loc == null || loc.getWorld() == null) {
+					loc = entity.getLocation();
+				}
+			} else {
+				loc = entity.getLocation();
+			}
+			return new DelayedRegionOverlapAssociation(query, BukkitAdapter.adapt(loc),
+					config.useMaxPriorityAssociation);
+		} else if (rootCause instanceof Block block) {
+			RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
+			Location loc = block.getLocation();
+			return new DelayedRegionOverlapAssociation(query, BukkitAdapter.adapt(loc),
+					getWorldConfig(loc.getWorld()).useMaxPriorityAssociation);
+		} else {
+			return Associables.constant(Association.NON_MEMBER);
 		}
-
-        return switch (cause.getRootCause()) {
-            case Player player -> WorldGuardPlugin.inst().wrapPlayer(player);
-            case OfflinePlayer offlinePlayer -> WorldGuardPlugin.inst().wrapOfflinePlayer(offlinePlayer);
-            case Entity entity -> new DelayedRegionOverlapAssociation(
-					WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(entity.getLocation())
-			);
-            case Block block -> new DelayedRegionOverlapAssociation(
-					WGRegionUtils.REGION_QUERY, BukkitAdapter.adapt(block.getLocation())
-			);
-            case null, default -> Associables.constant(Association.NON_MEMBER);
-        };
 	}
 
+	/**
+	 * Return whether the given cause is whitelist (should be ignored).
+	 *
+	 * @param cause the cause
+	 * @param world the world
+	 * @param pvp whether the event in question is PvP combat
+	 * @return true if whitelisted
+	 */
 	private boolean isWhitelisted(Cause cause, World world, boolean pvp) {
 		Object rootCause = cause.getRootCause();
 
-		if (rootCause instanceof Block block) {
-			Material type = block.getType();
-			return (type == Material.HOPPER) || (type == Material.DROPPER);
-		} else if (rootCause instanceof Player player) {
-            WorldConfiguration config = WGRegionUtils.getWorldConfig(world);
+		if (rootCause instanceof Player) {
+			Player player = (Player) rootCause;
+			WorldConfiguration config = getWorldConfig(world);
 
 			if (config.fakePlayerBuildOverride && InteropUtils.isFakePlayer(player)) {
 				return true;
 			}
 
 			LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
-			return !pvp && WGRegionUtils.getPlatform().getSessionManager().hasBypass(localPlayer, localPlayer.getWorld());
+			return !pvp && WorldGuard.getInstance().getPlatform().getSessionManager().hasBypass(localPlayer, localPlayer.getWorld());
 		} else {
 			return false;
 		}
 	}
 
+	/**
+	 * Tell a sender that s/he cannot do something 'here'.
+	 *
+	 * @param event the event
+	 * @param cause the cause
+	 * @param location the location
+	 * @param what what was done
+	 */
 	private void tellErrorMessage(DelegateEvent event, Cause cause, Location location, String what) {
 		if (event.isSilent() || cause.isIndirect()) {
 			return;
 		}
 
-		if (cause.getRootCause() instanceof Player player) {
+		Object rootCause = cause.getRootCause();
+
+		if (rootCause instanceof Player) {
+			Player player = (Player) rootCause;
+
 			long now = System.currentTimeMillis();
 			Long lastTime = WGMetadata.getIfPresent(player, DENY_MESSAGE_KEY, Long.class);
 			if (lastTime == null || now - lastTime >= LAST_MESSAGE_DELAY) {
-				RegionQuery query = WGRegionUtils.getPlatform().getRegionContainer().createQuery();
+				RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
 				LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
 				String message = query.queryValue(BukkitAdapter.adapt(location), localPlayer, Flags.DENY_MESSAGE);
 				formatAndSendDenyMessage(what, localPlayer, message);
@@ -234,21 +285,28 @@ public class PvPHandlingListener implements Listener {
 		}
 	}
 
-    private static void formatAndSendDenyMessage(String what, LocalPlayer localPlayer, String message) {
-        if (message == null || message.isEmpty()) return;
-        message = WGRegionUtils.getPlatform().getMatcher().replaceMacros(localPlayer, message);
-        message = CommandUtils.replaceColorMacros(message);
-        localPlayer.printRaw(message.replace("%what%", what));
-    }
-
-	private static StateFlag[] getFlags(DelegateEvent event) {
-		return event.getRelevantFlags().toArray(new StateFlag[0]);
+	static void formatAndSendDenyMessage(String what, LocalPlayer localPlayer, String message) {
+		if (message == null || message.isEmpty()) return;
+		message = WorldGuard.getInstance().getPlatform().getMatcher().replaceMacros(localPlayer, message);
+		message = CommandUtils.replaceColorMacros(message);
+		localPlayer.printRaw(message.replace("%what%", what));
 	}
 
-	private static StateFlag[] getFlags(DelegateEvent event, StateFlag flag) {
+	/**
+	 * Combine the flags from a delegate event with an array of flags.
+	 *
+	 * <p>The delegate event's flags appear at the end.</p>
+	 *
+	 * @param event The event
+	 * @param flag An array of flags
+	 * @return An array of flags
+	 */
+	private static StateFlag[] combine(DelegateEvent event, StateFlag... flag) {
 		List<StateFlag> extra = event.getRelevantFlags();
-		StateFlag[] result = Arrays.copyOf(getFlags(event), extra.size() + 1);
-		result[extra.size()] = flag;
-		return result;
+		StateFlag[] flags = Arrays.copyOf(flag, flag.length + extra.size());
+		for (int i = 0; i < extra.size(); i++) {
+			flags[flag.length + i] = extra.get(i);
+		}
+		return flags;
 	}
 }
