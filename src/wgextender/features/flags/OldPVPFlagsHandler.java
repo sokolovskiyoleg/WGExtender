@@ -62,7 +62,7 @@ public class OldPVPFlagsHandler implements Listener {
 	private void handlePlayer(Player player) {
 		if (WGRegionUtils.isFlagTrue(player.getLocation(), WGExtenderFlags.OLDPVP_ATTACKSPEED)) {
 			if (oldValues.containsKey(player.getUniqueId())) return;
-			AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+			AttributeInstance attribute = player.getAttribute(Attribute.ATTACK_SPEED);
 			oldValues.put(player.getUniqueId(), attribute.getBaseValue());
 			attribute.setBaseValue(16.0);
 		} else {
@@ -73,7 +73,7 @@ public class OldPVPFlagsHandler implements Listener {
 	private void reset(Player player) {
 		Double oldValue = oldValues.remove(player.getUniqueId());
 		if (oldValue != null) {
-			player.getAttribute(Attribute.GENERIC_ATTACK_SPEED).setBaseValue(oldValue);
+			player.getAttribute(Attribute.ATTACK_SPEED).setBaseValue(oldValue);
 		}
 	}
 
