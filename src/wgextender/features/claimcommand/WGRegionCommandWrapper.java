@@ -85,8 +85,8 @@ public class WGRegionCommandWrapper extends Command {
 		return switch (info.result()) {
             case ALLOW -> true;
 			case DENY_MAX_VOLUME -> {
-				player.sendMessage(RED + "Вы не можете заприватить такой большой регион");
-				player.sendMessage(RED + "Ваш лимит: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
+				player.sendMessage(RED + "§8[§c§l!§8] §7Вы не можете заприватить такой большой регион");
+				player.sendMessage(RED + "§8[§c§l!§8] §7Ваш лимит: §8[§a"+info.assignedLimit()+"§8]. §7Размер выделения: §8[§c"+info.assignedSize() + "§8].§r");
 				yield false;
 			}
 			case DENY_MIN_VOLUME -> {

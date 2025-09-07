@@ -31,7 +31,7 @@ public class WGClaimCommand {
 			throw new CommandException("Нельзя заприватить __global__.");
 		}
 		if (!ProtectedRegion.isValidId(id) || id.startsWith("-")) {
-			throw new CommandException("Имя региона '" + id + "' содержит запрещённые символы.");
+			throw new CommandException("§8[§c!§8] §7Имя региона §c" + id + "§7 содержит запрещённые символы.");
 		}
 
         BukkitWorldConfiguration wcfg = WGRegionUtils.getWorldConfig(player);
@@ -51,7 +51,7 @@ public class WGClaimCommand {
 		RegionManager manager = WGRegionUtils.getRegionManager(player.getWorld());
 
 		if (manager.hasRegion(id)) {
-			throw new CommandException("Регион с таким именем уже существует, выберите другое.");
+			throw new CommandException("§8[§c§l!§8] §7Регион с таким именем уже существует.");
 		}
 
 		ProtectedRegion region = createProtectedRegionFromSelection(player, id);
@@ -59,7 +59,7 @@ public class WGClaimCommand {
 		if (!permModel.mayClaimRegionsUnbounded()) {
 			int maxRegionCount = wcfg.getMaxRegionCount(localPlayer);
 			if ((maxRegionCount >= 0) && (manager.getRegionCountOfPlayer(localPlayer) >= maxRegionCount)) {
-				throw new CommandException("У вас слишком много регионов, удалите один из них перед тем как заприватить новый.");
+				throw new CommandException("§8[§c§l!§8] §7У вас слишком много регионов, удалите один из них перед тем как заприватить новый.");
 			}
 			if (region.volume() > wcfg.maxClaimVolume) {
 				throw new CommandException("Размер региона слишком большой. Максимальный размер: " + wcfg.maxClaimVolume + ", ваш размер: " + region.volume());
@@ -70,7 +70,7 @@ public class WGClaimCommand {
 
 		if (regions.size() > 0) {
 			if (!regions.isOwnerOfAll(localPlayer)) {
-				throw new CommandException("Это регион перекрывает чужой регион.");
+				throw new CommandException("§8[§c§l!§8] §7Регион не создан. Он перекрывает чужой регион.");
 			}
 		} else if (wcfg.claimOnlyInsideExistingRegions) {
 			throw new CommandException("Вы можете приватить только внутри своих регионов.");
@@ -81,7 +81,7 @@ public class WGClaimCommand {
 		task.setOwnersInput(new String[] { player.getName() });
 		try {
 			task.call();
-			sender.sendMessage(ChatColor.YELLOW + "Вы заприватили регион "+id);
+			sender.sendMessage(ChatColor.YELLOW + "§8[§a!§8] §7Регион §a"+id + "§7 создан.");
 		} catch (Exception e) {
 			sender.sendMessage(ChatColor.YELLOW + "Произошла ошибка при привате региона "+id);
 			e.printStackTrace();
