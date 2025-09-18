@@ -28,7 +28,7 @@ public class WGClaimCommand {
 			throw new CommandException("Эта команда только для игроков");
 		}
 		if (id.equalsIgnoreCase("__global__")) {
-			throw new CommandException("Нельзя заприватить __global__.");
+			throw new CommandException("§8[§c!§8] §7Нельзя заприватить регион, с названием __global__.");
 		}
 		if (!ProtectedRegion.isValidId(id) || id.startsWith("-")) {
 			throw new CommandException("§8[§c!§8] §7Имя региона §c" + id + "§7 содержит запрещённые символы.");
@@ -81,7 +81,7 @@ public class WGClaimCommand {
 		task.setOwnersInput(new String[] { player.getName() });
 		try {
 			task.call();
-			sender.sendMessage(ChatColor.YELLOW + "§8[§a!§8] §7Регион §a"+id + "§7 создан.");
+			sender.sendMessage(ChatColor.YELLOW + "§8[§a§l!§8] §7Регион §a"+id + "§7 создан.");
 		} catch (Exception e) {
 			sender.sendMessage(ChatColor.YELLOW + "Произошла ошибка при привате региона "+id);
 			e.printStackTrace();
