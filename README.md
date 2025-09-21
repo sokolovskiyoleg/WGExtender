@@ -1,4 +1,17 @@
-# WGExtender Fork
-A fork of [WGExtender](https://github.com/Shevchik/WorldGuardExtender) that aims to support latest versions of Paper.
-It also adds configurable minimal region claim size limits.
-# [Releases](https://github.com/imDaniX/WGExtender/releases/latest) | [Dev Builds](https://github.com/imDaniX/WGExtender/actions?query=branch%3Amaster)
+# WGExtender
+
+WGExtender is a plugin that extends the features of WorldGuard. It adds new protection options, automatic vertical region expansion, and other improvements for region management on your Minecraft server.
+
+## Installation
+
+1. Make sure that WorldGuard is installed.
+2. Download WGExtender and put the `.jar` file into your server's `plugins` directory.
+3. Restart your server.
+
+## License
+
+This project is licensed under the GNU AGPL v3.0. For details, see [LICENSE](./LICENSE).
+
+---
+
+**Fork repository:** [sokolovskiyoleg/WGExtender](https://github.com/sokolovskiyoleg/WGExtender)
