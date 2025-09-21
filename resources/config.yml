@@ -31,3 +31,26 @@ extendedwewand: false
 misc:
   pvpmode: default
   old-pvp-flags: true
+messages:
+  player-only-command: "Эта команда только для игроков"
+  global-region-name-forbidden: "§8[§c!§8] §7Нельзя заприватить регион, с названием __global__."
+  invalid-region-name: "§8[§c!§8] §7Имя региона §c%id%§7 содержит запрещённые символы."
+  max-claim-volume-error: "The maximum claim volume get in the configuration is higher than is supported. Currently, it must be 2147483647 or smaller. Please contact a server administrator."
+  region-already-exists: "§8[§c§l!§8] §7Регион с таким именем уже существует."
+  too-many-regions: "§8[§c§l!§8] §7У вас слишком много регионов, удалите один из них перед тем как заприватить новый."
+  region-too-large: "Размер региона слишком большой. Максимальный размер: %max%, ваш размер: %current%"
+  overlapping-others-region: "§8[§c§l!§8] §7Регион не создан. Он перекрывает чужой регион."
+  claim-only-inside-existing: "Вы можете приватить только внутри своих регионов."
+  region-created: "§8[§a§l!§8] §7Регион §a%id%§7 создан."
+  region-creation-error: "Произошла ошибка при привате региона %id%"
+  only-cuboid-selection-allowed: "Вы можете использовать только кубическкую территорию."
+  no-selection-made: "Сначала выделите территорию. Используйте WorldEdit для выделения (wiki: http://wiki.sk89q.com/wiki/WorldEdit)."
+  region-expanded-vertically: "Регион автоматически расширен по вертикали"
+  claim-too-large: "§8[§c§l!§8] §7Вы не можете заприватить такой большой регион"
+  claim-your-limit: "§8[§c§l!§8] §7Ваш лимит: §8[§a%limit%§8]. §7Размер выделения: §8[§c%size%§8].§r"
+  claim-too-small: "Вы не можете заприватить такой маленький регион"
+  claim-min-volume: "Минимальный объем: %limit%, вы попытались заприватить: %size%"
+  claim-too-narrow: "Вы не можете заприватить такой узкий регион"
+  claim-min-width: "Минимальная ширина: %limit%, вы попытались заприватить: %size%"
+  claim-too-low: "Вы не можете заприватить такой низкий регион"
+  claim-min-height: "Минимальная высота: %limit%, вы попытались заприватить: %size%"

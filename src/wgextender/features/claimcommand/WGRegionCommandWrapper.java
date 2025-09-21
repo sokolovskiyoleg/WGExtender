@@ -31,79 +31,90 @@ import static org.bukkit.ChatColor.YELLOW;
 
 public class WGRegionCommandWrapper extends Command {
 
-	public static void inject(Config config) {
-		WGRegionCommandWrapper wrapper = new WGRegionCommandWrapper(config, CommandUtils.getCommands().get("region"));
-		CommandUtils.replaceCommand(wrapper.originalCmd, wrapper);
-	}
+    private final WGClaimCommand wgClaimCommand;
 
-	public static void uninject() {
-		WGRegionCommandWrapper wrapper = (WGRegionCommandWrapper) CommandUtils.getCommands().get("region");
-		CommandUtils.replaceCommand(wrapper, wrapper.originalCmd);
-	}
+    public static void inject(Config config) {
+        WGRegionCommandWrapper wrapper = new WGRegionCommandWrapper(config, CommandUtils.getCommands().get("region"));
+        CommandUtils.replaceCommand(wrapper.originalCmd, wrapper);
+    }
 
-	protected final Config config;
-	protected final Command originalCmd;
+    public static void uninject() {
+        WGRegionCommandWrapper wrapper = (WGRegionCommandWrapper) CommandUtils.getCommands().get("region");
+        CommandUtils.replaceCommand(wrapper, wrapper.originalCmd);
+    }
 
-	protected WGRegionCommandWrapper(Config config, Command originalCmd) {
-		super(originalCmd.getName(), originalCmd.getDescription(), originalCmd.getUsage(), originalCmd.getAliases());
-		this.config = config;
-		this.originalCmd = originalCmd;
-	}
+    protected final Config config;
+    protected final Command originalCmd;
 
-	private final BlockLimits blockLimits = new BlockLimits();
+    protected WGRegionCommandWrapper(Config config, Command originalCmd) {
+        super(originalCmd.getName(), originalCmd.getDescription(), originalCmd.getUsage(), originalCmd.getAliases());
+        this.config = config;
+        this.originalCmd = originalCmd;
+        this.wgClaimCommand = new WGClaimCommand(config);
+    }
 
-	@Override
-	public boolean execute(CommandSender sender, String label, String[] args) {
-		if ((sender instanceof Player player) && (args.length >= 2) && args[0].equalsIgnoreCase("claim")) {
+    private final BlockLimits blockLimits = new BlockLimits();
+
+    @Override
+    public boolean execute(CommandSender sender, String label, String[] args) {
+        if ((sender instanceof Player player) && (args.length >= 2) && args[0].equalsIgnoreCase("claim")) {
             String regionName = args[1];
-			if (config.claimExpandSelectionVertical) {
-				boolean result = WEUtils.expandVert((Player) sender);
-				if (result) {
-					player.sendMessage(YELLOW + "Регион автоматически расширен по вертикали");
-				}
-			}
-			if (!process(player)) {
-				return true;
-			}
-			boolean hasRegion = AutoFlags.hasRegion(player.getWorld(), regionName);
-			try {
-				WGClaimCommand.claim(regionName, sender);
-				if (!hasRegion && config.claimAutoFlagsEnabled) {
-					AutoFlags.setFlagsForRegion(WGRegionUtils.wrapAsPrivileged(player, config.showAutoFlagMessages), player.getWorld(), config, regionName);
-				}
-			} catch (CommandException ex) {
-				sender.sendMessage(RED + ex.getMessage());
-			}
-			return true;
-		} else {
-			return originalCmd.execute(sender, label, args);
-		}
-	}
+            if (config.claimExpandSelectionVertical) {
+                boolean result = WEUtils.expandVert((Player) sender);
+                if (result) {
+                    player.sendMessage(config.getMessages().regionExpandedVertically);
+                }
+            }
+            if (!process(player)) {
+                return true;
+            }
+            boolean hasRegion = AutoFlags.hasRegion(player.getWorld(), regionName);
+            try {
+                wgClaimCommand.claim(regionName, sender);
+                if (!hasRegion && config.claimAutoFlagsEnabled) {
+                    AutoFlags.setFlagsForRegion(WGRegionUtils.wrapAsPrivileged(player, config.showAutoFlagMessages), player.getWorld(), config, regionName);
+                }
+            } catch (CommandException ex) {
+                sender.sendMessage(RED + ex.getMessage());
+            }
+            return true;
+        } else {
+            return originalCmd.execute(sender, label, args);
+        }
+    }
 
-	private boolean process(Player player) {
-		BlockLimits.ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
-		return switch (info.result()) {
+    private boolean process(Player player) {
+        BlockLimits.ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
+        return switch (info.result()) {
             case ALLOW -> true;
-			case DENY_MAX_VOLUME -> {
-				player.sendMessage(RED + "§8[§c§l!§8] §7Вы не можете заприватить такой большой регион");
-				player.sendMessage(RED + "§8[§c§l!§8] §7Ваш лимит: §8[§a"+info.assignedLimit()+"§8]. §7Размер выделения: §8[§c"+info.assignedSize() + "§8].§r");
-				yield false;
-			}
-			case DENY_MIN_VOLUME -> {
-				player.sendMessage(RED + "Вы не можете заприватить такой маленький регион");
-				player.sendMessage(RED + "Минимальный объем: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
-				yield false;
-			}
-			case DENY_HORIZONTAL -> {
-				player.sendMessage(RED + "Вы не можете заприватить такой узкий регион");
-				player.sendMessage(RED + "Минимальная ширина: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
-				yield false;
-			}
-			case DENY_VERTICAL -> {
-				player.sendMessage(RED + "Вы не можете заприватить такой низкий регион");
-				player.sendMessage(RED + "Минимальная высота: "+info.assignedLimit()+", вы попытались заприватить: "+info.assignedSize());
-				yield false;
-			}
-		};
-	}
+            case DENY_MAX_VOLUME -> {
+                player.sendMessage(RED + config.getMessages().claimTooLarge);
+                player.sendMessage(RED + config.getMessages().claimYourLimit
+                        .replace("%limit%", info.assignedLimit().toString())
+                        .replace("%size%", info.assignedSize().toString()));
+                yield false;
+            }
+            case DENY_MIN_VOLUME -> {
+                player.sendMessage(RED + config.getMessages().claimTooSmall);
+                player.sendMessage(RED + config.getMessages().claimMinVolume
+                        .replace("%limit%", info.assignedLimit().toString())
+                        .replace("%size%", info.assignedSize().toString()));
+                yield false;
+            }
+            case DENY_HORIZONTAL -> {
+                player.sendMessage(RED + config.getMessages().claimTooNarrow);
+                player.sendMessage(RED + config.getMessages().claimMinWidth
+                        .replace("%limit%", info.assignedLimit().toString())
+                        .replace("%size%", info.assignedSize().toString()));
+                yield false;
+            }
+            case DENY_VERTICAL -> {
+                player.sendMessage(RED + config.getMessages().claimTooLow);
+                player.sendMessage(RED + config.getMessages().claimMinHeight
+                        .replace("%limit%", info.assignedLimit().toString())
+                        .replace("%size%", info.assignedSize().toString()));
+                yield false;
+            }
+        };
+    }
 }
