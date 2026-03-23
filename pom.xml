@@ -6,7 +6,7 @@
 
     <groupId>org.hurricanegames</groupId>
     <artifactId>wgextender</artifactId>
-    <version>3.2.0-fork-SNAPSHOT</version>
+    <version>3.2.1</version>
     <packaging>jar</packaging>
 
     <name>WGExtender</name>
@@ -54,7 +54,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.4-R0.1-SNAPSHOT</version>
+            <version>1.21.11-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
@@ -67,7 +67,7 @@
         <dependency>
             <groupId>com.sk89q.worldguard</groupId>
             <artifactId>worldguard-bukkit</artifactId>
-            <version>7.0.13</version>
+            <version>7.0.15</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -91,7 +91,7 @@
         <dependency>
             <groupId>com.sk89q.worldedit</groupId>
             <artifactId>worldedit-bukkit</artifactId>
-            <version>7.3.10</version>
+            <version>7.4.1</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -107,13 +107,13 @@
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-minimessage</artifactId>
-            <version>4.15.0</version>
+            <version>4.26.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-serializer-legacy</artifactId>
-            <version>4.15.0</version>
+            <version>4.26.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
