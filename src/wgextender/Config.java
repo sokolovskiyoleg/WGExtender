@@ -24,6 +24,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
+import wgextender.color.ColorizerProvider;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -179,31 +180,38 @@ public class Config {
 
     private void loadMessages(FileConfiguration config) {
         ConfigurationSection messagesSection = config.getConfigurationSection("messages");
-        if (messagesSection != null) {
-            messages.playerOnlyCommand = messagesSection.getString("player-only-command", messages.playerOnlyCommand);
-            messages.globalRegionNameForbidden = messagesSection.getString("global-region-name-forbidden", messages.globalRegionNameForbidden);
-            messages.invalidRegionName = messagesSection.getString("invalid-region-name", messages.invalidRegionName);
-            messages.maxClaimVolumeError = messagesSection.getString("max-claim-volume-error", messages.maxClaimVolumeError);
-            messages.regionAlreadyExists = messagesSection.getString("region-already-exists", messages.regionAlreadyExists);
-            messages.tooManyRegions = messagesSection.getString("too-many-regions", messages.tooManyRegions);
-            messages.regionTooLarge = messagesSection.getString("region-too-large", messages.regionTooLarge);
-            messages.overlappingOthersRegion = messagesSection.getString("overlapping-others-region", messages.overlappingOthersRegion);
-            messages.claimOnlyInsideExisting = messagesSection.getString("claim-only-inside-existing", messages.claimOnlyInsideExisting);
-            messages.regionCreated = messagesSection.getString("region-created", messages.regionCreated);
-            messages.regionCreationError = messagesSection.getString("region-creation-error", messages.regionCreationError);
-            messages.onlyCuboidSelectionAllowed = messagesSection.getString("only-cuboid-selection-allowed", messages.onlyCuboidSelectionAllowed);
-            messages.noSelectionMade = messagesSection.getString("no-selection-made", messages.noSelectionMade);
-            //
-            messages.regionExpandedVertically = messagesSection.getString("region-expanded-vertically", messages.regionExpandedVertically);
-            messages.claimTooLarge = messagesSection.getString("claim-too-large", messages.claimTooLarge);
-            messages.claimYourLimit = messagesSection.getString("claim-your-limit", messages.claimYourLimit);
-            messages.claimTooSmall = messagesSection.getString("claim-too-small", messages.claimTooSmall);
-            messages.claimMinVolume = messagesSection.getString("claim-min-volume", messages.claimMinVolume);
-            messages.claimTooNarrow = messagesSection.getString("claim-too-narrow", messages.claimTooNarrow);
-            messages.claimMinWidth = messagesSection.getString("claim-min-width", messages.claimMinWidth);
-            messages.claimTooLow = messagesSection.getString("claim-too-low", messages.claimTooLow);
-            messages.claimMinHeight = messagesSection.getString("claim-min-height", messages.claimMinHeight);
+        ColorizerProvider.init(messagesSection);
+        messages.playerOnlyCommand = colorize(messagesSection, "player-only-command", messages.playerOnlyCommand);
+        messages.globalRegionNameForbidden = colorize(messagesSection, "global-region-name-forbidden", messages.globalRegionNameForbidden);
+        messages.invalidRegionName = colorize(messagesSection, "invalid-region-name", messages.invalidRegionName);
+        messages.maxClaimVolumeError = colorize(messagesSection, "max-claim-volume-error", messages.maxClaimVolumeError);
+        messages.regionAlreadyExists = colorize(messagesSection, "region-already-exists", messages.regionAlreadyExists);
+        messages.tooManyRegions = colorize(messagesSection, "too-many-regions", messages.tooManyRegions);
+        messages.regionTooLarge = colorize(messagesSection, "region-too-large", messages.regionTooLarge);
+        messages.overlappingOthersRegion = colorize(messagesSection, "overlapping-others-region", messages.overlappingOthersRegion);
+        messages.claimOnlyInsideExisting = colorize(messagesSection, "claim-only-inside-existing", messages.claimOnlyInsideExisting);
+        messages.regionCreated = colorize(messagesSection, "region-created", messages.regionCreated);
+        messages.regionCreationError = colorize(messagesSection, "region-creation-error", messages.regionCreationError);
+        messages.onlyCuboidSelectionAllowed = colorize(messagesSection, "only-cuboid-selection-allowed", messages.onlyCuboidSelectionAllowed);
+        messages.noSelectionMade = colorize(messagesSection, "no-selection-made", messages.noSelectionMade);
+        //
+        messages.regionExpandedVertically = colorize(messagesSection, "region-expanded-vertically", messages.regionExpandedVertically);
+        messages.claimTooLarge = colorize(messagesSection, "claim-too-large", messages.claimTooLarge);
+        messages.claimYourLimit = colorize(messagesSection, "claim-your-limit", messages.claimYourLimit);
+        messages.claimTooSmall = colorize(messagesSection, "claim-too-small", messages.claimTooSmall);
+        messages.claimMinVolume = colorize(messagesSection, "claim-min-volume", messages.claimMinVolume);
+        messages.claimTooNarrow = colorize(messagesSection, "claim-too-narrow", messages.claimTooNarrow);
+        messages.claimMinWidth = colorize(messagesSection, "claim-min-width", messages.claimMinWidth);
+        messages.claimTooLow = colorize(messagesSection, "claim-too-low", messages.claimTooLow);
+        messages.claimMinHeight = colorize(messagesSection, "claim-min-height", messages.claimMinHeight);
+    }
+
+    private static String colorize(ConfigurationSection section, String key, String defaultValue) {
+        String rawText = section == null ? defaultValue : section.getString(key, defaultValue);
+        if (rawText == null) {
+            return null;
         }
+        return ColorizerProvider.get().colorize(rawText);
     }
 
     private static BigInteger asBig(ConfigurationSection section, String key) {
