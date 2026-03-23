@@ -18,7 +18,6 @@
 package wgextender.features.regionprotect.ownormembased;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -82,7 +81,7 @@ public class RestrictCommands implements Listener {
 			for (String rcommand : restrictedCommands) {
 				if (command.startsWith(rcommand) && (command.length() == rcommand.length() || command.charAt(rcommand.length()) == ' ')) {
 					event.setCancelled(true);
-					player.sendMessage(ChatColor.RED + "Вы не можете использовать эту команду в чужом регионе");
+					player.sendMessage(config.getMessages().restrictedCommandDenied);
 					return;
 				}
 			}

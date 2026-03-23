@@ -47,8 +47,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.bukkit.ChatColor.BLUE;
-import static org.bukkit.ChatColor.RED;
 import static org.bukkit.util.StringUtil.copyPartialMatches;
 
 //TODO: refactor
@@ -72,22 +70,22 @@ public class Commands implements CommandExecutor, TabCompleter {
 	@Override
 	public boolean onCommand(CommandSender sender, Command arg1, String label, String[] args) {
 		if (!sender.hasPermission("wgextender.admin")) {
-			sender.sendMessage(RED + "Недостаточно прав");
+			sender.sendMessage(config.getMessages().adminNoPermission);
 			return true;
 		}
 		if (args.length >= 1) {
 			switch (args[0].toLowerCase()) {
 				case "help" -> {
-					sender.sendMessage(BLUE + "wgex reload - перезагрузить конфиг");
-					sender.sendMessage(BLUE + "wgex search - ищет регионы в выделенной области");
-					sender.sendMessage(BLUE + "wgex setflag {world} {flag} {value}  - устанавливает флаг {flag} со значением {value} на все регионы в мире {world}");
-					sender.sendMessage(BLUE + "wgex removeowner {name} - удаляет игрока из списков владельцев всех регионов");
-					sender.sendMessage(BLUE + "wgex removemember {name} - удаляет игрока из списков членов всех регионов");
+					sender.sendMessage(config.getMessages().adminHelpReload);
+					sender.sendMessage(config.getMessages().adminHelpSearch);
+					sender.sendMessage(config.getMessages().adminHelpSetFlag);
+					sender.sendMessage(config.getMessages().adminHelpRemoveOwner);
+					sender.sendMessage(config.getMessages().adminHelpRemoveMember);
 					return true;
 				}
 				case "reload" -> {
 					config.loadConfig();
-					sender.sendMessage(BLUE + "Конфиг перезагружен");
+					sender.sendMessage(config.getMessages().adminConfigReloaded);
 					return true;
 				}
 				case "search" -> {
@@ -95,12 +93,12 @@ public class Commands implements CommandExecutor, TabCompleter {
 						try {
 							List<String> regions = getRegionsInPlayerSelection(player);
 							if (regions.isEmpty()) {
-								sender.sendMessage(BLUE + "Регионов пересекающихся с выделенной зоной не найдено");
+								sender.sendMessage(config.getMessages().adminSearchNone);
 							} else {
-								sender.sendMessage(BLUE + "Найдены регионы пересекающиеся с выделенной зоной: " + regions);
+								sender.sendMessage(config.getMessages().adminSearchFound.replace("%regions%", regions.toString()));
 							}
 						} catch (IncompleteRegionException e) {
-							sender.sendMessage(BLUE + "Сначала выделите зону поиска");
+							sender.sendMessage(config.getMessages().adminSearchNoSelection);
 						}
 						return true;
 					}
@@ -112,12 +110,12 @@ public class Commands implements CommandExecutor, TabCompleter {
 					}
 					World world = Bukkit.getWorld(args[1]);
 					if (world == null) {
-						sender.sendMessage(BLUE + "Мир не найден");
+						sender.sendMessage(config.getMessages().adminWorldNotFound);
 						return true;
 					}
 					Flag<?> flag = Flags.fuzzyMatchFlag(WorldGuard.getInstance().getFlagRegistry(), args[2]);
 					if (flag == null) {
-						sender.sendMessage(BLUE + "Флаг не найден");
+						sender.sendMessage(config.getMessages().adminFlagNotFound);
 						return true;
 					}
 					try {
@@ -128,9 +126,11 @@ public class Commands implements CommandExecutor, TabCompleter {
 							}
 							AutoFlags.setFlag(WGRegionUtils.wrapAsPrivileged(sender, false), world, region, flag, value);
 						}
-						sender.sendMessage(BLUE + "Флаги установлены");
+						sender.sendMessage(config.getMessages().adminFlagsSet);
 					} catch (CommandException e) {
-						sender.sendMessage(BLUE + "Неправильный формат флага " + flag.getName() + ": " + e.getMessage());
+						sender.sendMessage(config.getMessages().adminFlagInvalidFormat
+								.replace("%flag%", flag.getName())
+								.replace("%error%", e.getMessage()));
 					}
 					return true;
 				}
@@ -150,7 +150,10 @@ public class Commands implements CommandExecutor, TabCompleter {
 							region.setMembers(members);
 						}
 					}
-					sender.sendMessage(BLUE + "Игрок удалён из списков " + (owner ? "владельцев" : "участников") + " всех регионов");
+					String group = owner
+							? config.getMessages().adminRegionGroupOwners
+							: config.getMessages().adminRegionGroupMembers;
+					sender.sendMessage(config.getMessages().adminPlayerRemovedFromAllRegions.replace("%group%", group));
 					return true;
 				}
 			}

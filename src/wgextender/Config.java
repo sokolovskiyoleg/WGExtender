@@ -27,16 +27,28 @@ import org.bukkit.plugin.Plugin;
 import wgextender.color.ColorizerProvider;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class Config {
+    private static final Map<String, String> MESSAGE_KEY_OVERRIDES = Map.of(
+            "adminHelpSetFlag", "admin-help-setflag",
+            "adminHelpRemoveOwner", "admin-help-removeowner",
+            "adminHelpRemoveMember", "admin-help-removemember"
+    );
+
 
     private final Plugin plugin;
     protected final File configFile;
     public Config(WGExtender plugin) {
         this.plugin = plugin;
         configFile = new File(plugin.getDataFolder(), "config.yml");
+        loadDefaultMessages();
     }
 
     public boolean claimExpandSelectionVertical = false;
@@ -74,29 +86,49 @@ public class Config {
 
 
     public class Messages {
-        public String playerOnlyCommand = "Эта команда только для игроков";
-        public String globalRegionNameForbidden = "§8[§c!§8] §7Нельзя заприватить регион, с названием __global__.";
-        public String invalidRegionName = "§8[§c!§8] §7Имя региона §c%id%§7 содержит запрещённые символы.";
-        public String maxClaimVolumeError = "The maximum claim volume get in the configuration is higher than is supported. Currently, it must be 2147483647 or smaller. Please contact a server administrator.";
-        public String regionAlreadyExists = "§8[§c§l!§8] §7Регион с таким именем уже существует.";
-        public String tooManyRegions = "§8[§c§l!§8] §7У вас слишком много регионов, удалите один из них перед тем как заприватить новый.";
-        public String regionTooLarge = "Размер региона слишком большой. Максимальный размер: %max%, ваш размер: %current%";
-        public String overlappingOthersRegion = "§8[§c§l!§8] §7Регион не создан. Он перекрывает чужой регион.";
-        public String claimOnlyInsideExisting = "Вы можете приватить только внутри своих регионов.";
-        public String regionCreated = "§8[§a§l!§8] §7Регион §a%id%§7 создан.";
-        public String regionCreationError = "Произошла ошибка при привате региона %id%";
-        public String onlyCuboidSelectionAllowed = "Вы можете использовать только кубическкую территорию.";
-        public String noSelectionMade = "Сначала выделите территорию. Используйте WorldEdit для выделения (wiki: http://wiki.sk89q.com/wiki/WorldEdit).";
-        //
-        public String regionExpandedVertically = "Регион автоматически расширен по вертикали";
-        public String claimTooLarge = "§8[§c§l!§8] §7Вы не можете заприватить такой большой регион";
-        public String claimYourLimit = "§8[§c§l!§8] §7Ваш лимит: §8[§a%limit%§8]. §7Размер выделения: §8[§c%size%§8].§r";
-        public String claimTooSmall = "Вы не можете заприватить такой маленький регион";
-        public String claimMinVolume = "Минимальный объем: %limit%, вы попытались заприватить: %size%";
-        public String claimTooNarrow = "Вы не можете заприватить такой узкий регион";
-        public String claimMinWidth = "Минимальная ширина: %limit%, вы попытались заприватить: %size%";
-        public String claimTooLow = "Вы не можете заприватить такой низкий регион";
-        public String claimMinHeight = "Минимальная высота: %limit%, вы попытались заприватить: %size%";
+        public String playerOnlyCommand;
+        public String globalRegionNameForbidden;
+        public String invalidRegionName;
+        public String maxClaimVolumeError;
+        public String regionAlreadyExists;
+        public String tooManyRegions;
+        public String regionTooLarge;
+        public String overlappingOthersRegion;
+        public String claimOnlyInsideExisting;
+        public String regionCreated;
+        public String regionCreationError;
+        public String onlyCuboidSelectionAllowed;
+        public String noSelectionMade;
+        public String regionExpandedVertically;
+        public String claimTooLarge;
+        public String claimYourLimit;
+        public String claimTooSmall;
+        public String claimMinVolume;
+        public String claimTooNarrow;
+        public String claimMinWidth;
+        public String claimTooLow;
+        public String claimMinHeight;
+        public String adminNoPermission;
+        public String adminHelpReload;
+        public String adminHelpSearch;
+        public String adminHelpSetFlag;
+        public String adminHelpRemoveOwner;
+        public String adminHelpRemoveMember;
+        public String adminConfigReloaded;
+        public String adminSearchNone;
+        public String adminSearchFound;
+        public String adminSearchNoSelection;
+        public String adminWorldNotFound;
+        public String adminFlagNotFound;
+        public String adminFlagsSet;
+        public String adminFlagInvalidFormat;
+        public String adminPlayerRemovedFromAllRegions;
+        public String adminRegionGroupOwners;
+        public String adminRegionGroupMembers;
+        public String chorusFruitDenied;
+        public String restrictedCommandDenied;
+        public String wandGiven;
+        public String wandDisplayName;
     }
 
     protected static final String miscPvPFlagOperationModeAllow = "allow";
@@ -179,31 +211,64 @@ public class Config {
     }
 
     private void loadMessages(FileConfiguration config) {
-        ConfigurationSection messagesSection = config.getConfigurationSection("messages");
+        loadMessages(config.getConfigurationSection("messages"), false);
+    }
+
+    private void loadDefaultMessages() {
+        loadMessages(getDefaultMessagesSection(), true);
+    }
+
+    private void loadMessages(ConfigurationSection messagesSection, boolean initializeDefaults) {
         ColorizerProvider.init(messagesSection);
-        messages.playerOnlyCommand = colorize(messagesSection, "player-only-command", messages.playerOnlyCommand);
-        messages.globalRegionNameForbidden = colorize(messagesSection, "global-region-name-forbidden", messages.globalRegionNameForbidden);
-        messages.invalidRegionName = colorize(messagesSection, "invalid-region-name", messages.invalidRegionName);
-        messages.maxClaimVolumeError = colorize(messagesSection, "max-claim-volume-error", messages.maxClaimVolumeError);
-        messages.regionAlreadyExists = colorize(messagesSection, "region-already-exists", messages.regionAlreadyExists);
-        messages.tooManyRegions = colorize(messagesSection, "too-many-regions", messages.tooManyRegions);
-        messages.regionTooLarge = colorize(messagesSection, "region-too-large", messages.regionTooLarge);
-        messages.overlappingOthersRegion = colorize(messagesSection, "overlapping-others-region", messages.overlappingOthersRegion);
-        messages.claimOnlyInsideExisting = colorize(messagesSection, "claim-only-inside-existing", messages.claimOnlyInsideExisting);
-        messages.regionCreated = colorize(messagesSection, "region-created", messages.regionCreated);
-        messages.regionCreationError = colorize(messagesSection, "region-creation-error", messages.regionCreationError);
-        messages.onlyCuboidSelectionAllowed = colorize(messagesSection, "only-cuboid-selection-allowed", messages.onlyCuboidSelectionAllowed);
-        messages.noSelectionMade = colorize(messagesSection, "no-selection-made", messages.noSelectionMade);
-        //
-        messages.regionExpandedVertically = colorize(messagesSection, "region-expanded-vertically", messages.regionExpandedVertically);
-        messages.claimTooLarge = colorize(messagesSection, "claim-too-large", messages.claimTooLarge);
-        messages.claimYourLimit = colorize(messagesSection, "claim-your-limit", messages.claimYourLimit);
-        messages.claimTooSmall = colorize(messagesSection, "claim-too-small", messages.claimTooSmall);
-        messages.claimMinVolume = colorize(messagesSection, "claim-min-volume", messages.claimMinVolume);
-        messages.claimTooNarrow = colorize(messagesSection, "claim-too-narrow", messages.claimTooNarrow);
-        messages.claimMinWidth = colorize(messagesSection, "claim-min-width", messages.claimMinWidth);
-        messages.claimTooLow = colorize(messagesSection, "claim-too-low", messages.claimTooLow);
-        messages.claimMinHeight = colorize(messagesSection, "claim-min-height", messages.claimMinHeight);
+        for (Field field : Messages.class.getFields()) {
+            if (!field.getType().equals(String.class)) {
+                continue;
+            }
+            try {
+                String configKey = toMessageConfigKey(field.getName());
+                String defaultValue = initializeDefaults ? "" : (String) field.get(messages);
+                field.set(messages, colorize(messagesSection, configKey, defaultValue));
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Не удалось загрузить сообщение: " + field.getName(), e);
+            }
+        }
+    }
+
+    private ConfigurationSection getDefaultMessagesSection() {
+        try (InputStream inputStream = plugin.getResource("config.yml")) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Файл config.yml не найден");
+            }
+
+            try (InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                FileConfiguration defaultConfig = YamlConfiguration.loadConfiguration(reader);
+                ConfigurationSection messagesSection = defaultConfig.getConfigurationSection("messages");
+                if (messagesSection == null) {
+                    throw new IllegalStateException("В config.yml отсутствует секция messages");
+                }
+                return messagesSection;
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Не удалось прочитать config.yml", e);
+        }
+    }
+
+    private static String toMessageConfigKey(String fieldName) {
+        String override = MESSAGE_KEY_OVERRIDES.get(fieldName);
+        if (override != null) {
+            return override;
+        }
+
+        StringBuilder key = new StringBuilder(fieldName.length() + 8);
+        for (int i = 0; i < fieldName.length(); i++) {
+            char current = fieldName.charAt(i);
+            if (Character.isUpperCase(current)) {
+                key.append('-').append(Character.toLowerCase(current));
+            } else {
+                key.append(current);
+            }
+        }
+        return key.toString();
     }
 
     private static String colorize(ConfigurationSection section, String key, String defaultValue) {

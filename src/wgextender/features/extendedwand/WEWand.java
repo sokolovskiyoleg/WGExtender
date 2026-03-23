@@ -18,16 +18,18 @@
 package wgextender.features.extendedwand;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import wgextender.WGExtender;
 import wgextender.utils.WEUtils;
 
 public class WEWand { // TODO Use PersistentData API
-	protected static final String WAND_NAME = ChatColor.LIGHT_PURPLE + "Selection wand";
-
 	protected static Material cachedWandMaterial;
+
+	private static String getWandName() {
+		return WGExtender.getInstance().getPluginConfig().getMessages().wandDisplayName;
+	}
 
 	protected static Material getWandMaterial() { // TODO Rework to better handle registry
 		String weWandMaterialName = WEUtils.getWorldEditPlugin().getLocalConfiguration().wandItem.toUpperCase();
@@ -40,7 +42,7 @@ public class WEWand { // TODO Use PersistentData API
 	public static ItemStack getWand() {
 		ItemStack itemstack = new ItemStack(getWandMaterial());
 		ItemMeta meta = Bukkit.getItemFactory().getItemMeta(itemstack.getType());
-		meta.setDisplayName(WAND_NAME);
+		meta.setDisplayName(getWandName());
 		itemstack.setItemMeta(meta);
 		return itemstack;
 	}
@@ -48,7 +50,7 @@ public class WEWand { // TODO Use PersistentData API
 	public static boolean isWand(ItemStack item) {
 		if (item.getType().equals(getWandMaterial()) && item.hasItemMeta()) {
 			ItemMeta meta = item.getItemMeta();
-			return meta.hasDisplayName() && WAND_NAME.equals(meta.getDisplayName());
+			return meta.hasDisplayName() && getWandName().equals(meta.getDisplayName());
 		}
 		return false;
 	}

@@ -50,6 +50,7 @@ public class WGExtender extends JavaPlugin {
 
 	private PvPHandlingListener pvplistener;
 	private OldPVPFlagsHandler oldpvphandler;
+	private Config pluginConfig;
 
 	@Override
 	public void onLoad() {
@@ -59,24 +60,24 @@ public class WGExtender extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		VaultIntegration.getInstance().initialize(this);
-		Config config = new Config(this);
-		config.loadConfig();
-		Objects.requireNonNull(getCommand("wgex")).setExecutor(new Commands(config));
+		pluginConfig = new Config(this);
+		pluginConfig.loadConfig();
+		Objects.requireNonNull(getCommand("wgex")).setExecutor(new Commands(pluginConfig));
 		PluginManager pluginManager = getServer().getPluginManager();
-		pluginManager.registerEvents(new RestrictCommands(config), this);
-		pluginManager.registerEvents(new LiquidFlow(config), this);
-		pluginManager.registerEvents(new FireSpread(config), this);
-		pluginManager.registerEvents(new BlockBurn(config), this);
-		pluginManager.registerEvents(new Explode(config), this);
+		pluginManager.registerEvents(new RestrictCommands(pluginConfig), this);
+		pluginManager.registerEvents(new LiquidFlow(pluginConfig), this);
+		pluginManager.registerEvents(new FireSpread(pluginConfig), this);
+		pluginManager.registerEvents(new BlockBurn(pluginConfig), this);
+		pluginManager.registerEvents(new Explode(pluginConfig), this);
 		pluginManager.registerEvents(new WEWandListener(), this);
-		pluginManager.registerEvents(new ChorusFruitFlagHandler(), this);
+		pluginManager.registerEvents(new ChorusFruitFlagHandler(pluginConfig), this);
 		try {
-			WGRegionCommandWrapper.inject(config);
-			WEWandCommandWrapper.inject(config);
-			pvplistener = new PvPHandlingListener(config);
+			WGRegionCommandWrapper.inject(pluginConfig);
+			WEWandCommandWrapper.inject(pluginConfig);
+			pvplistener = new PvPHandlingListener(pluginConfig);
 			pvplistener.inject(this);
 			oldpvphandler = new OldPVPFlagsHandler();
-			if (config.miscOldPvpFlags) {
+			if (pluginConfig.miscOldPvpFlags) {
 				getLogger().warning(
 						"Enabling the old-PvP flags. Do note that they're not supported, " +
 						"as they're very out of scope of extending WG capabilities. " +
@@ -104,4 +105,7 @@ public class WGExtender extends JavaPlugin {
 		}
 	}
 
+	public Config getPluginConfig() {
+		return pluginConfig;
+	}
 }

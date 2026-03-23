@@ -26,9 +26,6 @@ import wgextender.utils.CommandUtils;
 import wgextender.utils.WEUtils;
 import wgextender.utils.WGRegionUtils;
 
-import static org.bukkit.ChatColor.RED;
-import static org.bukkit.ChatColor.YELLOW;
-
 public class WGRegionCommandWrapper extends Command {
 
     private final WGClaimCommand wgClaimCommand;
@@ -75,7 +72,7 @@ public class WGRegionCommandWrapper extends Command {
                     AutoFlags.setFlagsForRegion(WGRegionUtils.wrapAsPrivileged(player, config.showAutoFlagMessages), player.getWorld(), config, regionName);
                 }
             } catch (CommandException ex) {
-                sender.sendMessage(RED + ex.getMessage());
+                sender.sendMessage(ex.getMessage());
             }
             return true;
         } else {
@@ -88,33 +85,35 @@ public class WGRegionCommandWrapper extends Command {
         return switch (info.result()) {
             case ALLOW -> true;
             case DENY_MAX_VOLUME -> {
-                player.sendMessage(RED + config.getMessages().claimTooLarge);
-                player.sendMessage(RED + config.getMessages().claimYourLimit
-                        .replace("%limit%", info.assignedLimit().toString())
-                        .replace("%size%", info.assignedSize().toString()));
+                sendClaimDenied(player, config.getMessages().claimTooLarge, config.getMessages().claimYourLimit, info);
                 yield false;
             }
             case DENY_MIN_VOLUME -> {
-                player.sendMessage(RED + config.getMessages().claimTooSmall);
-                player.sendMessage(RED + config.getMessages().claimMinVolume
-                        .replace("%limit%", info.assignedLimit().toString())
-                        .replace("%size%", info.assignedSize().toString()));
+                sendClaimDenied(player, config.getMessages().claimTooSmall, config.getMessages().claimMinVolume, info);
                 yield false;
             }
             case DENY_HORIZONTAL -> {
-                player.sendMessage(RED + config.getMessages().claimTooNarrow);
-                player.sendMessage(RED + config.getMessages().claimMinWidth
-                        .replace("%limit%", info.assignedLimit().toString())
-                        .replace("%size%", info.assignedSize().toString()));
+                sendClaimDenied(player, config.getMessages().claimTooNarrow, config.getMessages().claimMinWidth, info);
                 yield false;
             }
             case DENY_VERTICAL -> {
-                player.sendMessage(RED + config.getMessages().claimTooLow);
-                player.sendMessage(RED + config.getMessages().claimMinHeight
-                        .replace("%limit%", info.assignedLimit().toString())
-                        .replace("%size%", info.assignedSize().toString()));
+                sendClaimDenied(player, config.getMessages().claimTooLow, config.getMessages().claimMinHeight, info);
                 yield false;
             }
         };
+    }
+
+    private static void sendClaimDenied(
+            Player player,
+            String titleMessage,
+            String detailsMessage,
+            BlockLimits.ProcessedClaimInfo info
+    ) {
+        String limit = info.assignedLimit().toString();
+        String size = info.assignedSize().toString();
+        player.sendMessage(titleMessage);
+        player.sendMessage(detailsMessage
+                .replace("%limit%", limit)
+                .replace("%size%", size));
     }
 }
