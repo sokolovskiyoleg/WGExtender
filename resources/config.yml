@@ -2,6 +2,7 @@ claim:
   vertexpand: false
   blocklimits:
     enabled: false
+    reset-oversized-selection: false
     limits: {}
     minimal:
       volume: 0

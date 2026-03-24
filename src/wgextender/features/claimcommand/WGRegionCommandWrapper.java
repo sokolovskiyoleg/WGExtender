@@ -29,6 +29,7 @@ import wgextender.utils.WGRegionUtils;
 public class WGRegionCommandWrapper extends Command {
 
     private final WGClaimCommand wgClaimCommand;
+    private final SelectionLimitValidator selectionLimitValidator;
 
     public static void inject(Config config) {
         WGRegionCommandWrapper wrapper = new WGRegionCommandWrapper(config, CommandUtils.getCommands().get("region"));
@@ -48,9 +49,8 @@ public class WGRegionCommandWrapper extends Command {
         this.config = config;
         this.originalCmd = originalCmd;
         this.wgClaimCommand = new WGClaimCommand(config);
+        this.selectionLimitValidator = new SelectionLimitValidator(config);
     }
-
-    private final BlockLimits blockLimits = new BlockLimits();
 
     @Override
     public boolean execute(CommandSender sender, String label, String[] args) {
@@ -81,39 +81,6 @@ public class WGRegionCommandWrapper extends Command {
     }
 
     private boolean process(Player player) {
-        BlockLimits.ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
-        return switch (info.result()) {
-            case ALLOW -> true;
-            case DENY_MAX_VOLUME -> {
-                sendClaimDenied(player, config.getMessages().claimTooLarge, config.getMessages().claimYourLimit, info);
-                yield false;
-            }
-            case DENY_MIN_VOLUME -> {
-                sendClaimDenied(player, config.getMessages().claimTooSmall, config.getMessages().claimMinVolume, info);
-                yield false;
-            }
-            case DENY_HORIZONTAL -> {
-                sendClaimDenied(player, config.getMessages().claimTooNarrow, config.getMessages().claimMinWidth, info);
-                yield false;
-            }
-            case DENY_VERTICAL -> {
-                sendClaimDenied(player, config.getMessages().claimTooLow, config.getMessages().claimMinHeight, info);
-                yield false;
-            }
-        };
-    }
-
-    private static void sendClaimDenied(
-            Player player,
-            String titleMessage,
-            String detailsMessage,
-            BlockLimits.ProcessedClaimInfo info
-    ) {
-        String limit = info.assignedLimit().toString();
-        String size = info.assignedSize().toString();
-        player.sendMessage(titleMessage);
-        player.sendMessage(detailsMessage
-                .replace("%limit%", limit)
-                .replace("%size%", size));
+        return selectionLimitValidator.validateClaim(player);
     }
 }

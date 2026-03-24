@@ -54,6 +54,7 @@ public class Config {
     public boolean claimExpandSelectionVertical = false;
 
     public boolean claimBlockLimitsEnabled = false;
+    public boolean claimResetOversizedSelection = false;
     public Map<String, BigInteger> claimBlockLimits = new LinkedHashMap<>();
     public BigInteger claimBlockLimitDefault = BigInteger.ZERO;
     public BigInteger claimBlockMinimalVolume = BigInteger.ZERO;
@@ -146,6 +147,7 @@ public class Config {
         claimExpandSelectionVertical = config.getBoolean("claim.vertexpand", claimExpandSelectionVertical);
 
         claimBlockLimitsEnabled = config.getBoolean("claim.blocklimits.enabled", claimBlockLimitsEnabled);
+        claimResetOversizedSelection = config.getBoolean("claim.blocklimits.reset-oversized-selection", claimResetOversizedSelection);
         claimBlockLimits.clear();
         ConfigurationSection limitsSection = config.getConfigurationSection("claim.blocklimits.limits");
         if (limitsSection != null) {

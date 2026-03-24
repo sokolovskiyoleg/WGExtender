@@ -69,7 +69,7 @@ public class BlockLimits {
 			}
 			if (minHorizontal.compareTo(config.claimBlockMinimalHorizontal) < 0) {
 				return new ProcessedClaimInfo(
-						Result.DENY_MIN_VOLUME,
+						Result.DENY_HORIZONTAL,
 						minHorizontal,
 						config.claimBlockMinimalHorizontal
 				);

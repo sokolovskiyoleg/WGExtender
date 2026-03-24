@@ -21,6 +21,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import wgextender.commands.Commands;
+import wgextender.features.claimcommand.SelectionLimitListener;
 import wgextender.features.claimcommand.WGRegionCommandWrapper;
 import wgextender.features.extendedwand.WEWandCommandWrapper;
 import wgextender.features.extendedwand.WEWandListener;
@@ -71,6 +72,7 @@ public class WGExtender extends JavaPlugin {
 		pluginManager.registerEvents(new Explode(pluginConfig), this);
 		pluginManager.registerEvents(new WEWandListener(), this);
 		pluginManager.registerEvents(new ChorusFruitFlagHandler(pluginConfig), this);
+		pluginManager.registerEvents(new SelectionLimitListener(pluginConfig), this);
 		try {
 			WGRegionCommandWrapper.inject(pluginConfig);
 			WEWandCommandWrapper.inject(pluginConfig);
