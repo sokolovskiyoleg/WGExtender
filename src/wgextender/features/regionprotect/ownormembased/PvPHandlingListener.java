@@ -109,14 +109,15 @@ public class PvPHandlingListener implements Listener {
 
 		RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
 		Player playerAttacker = event.getCause().getFirstPlayer();
+		boolean targetIsPlayer = event.getEntity() instanceof Player;
 		boolean canDamage;
 		String what;
 
 		// Block PvP like normal even if the player has an override permission
 		// because (1) this is a frequent source of confusion and
 		// (2) some users want to block PvP even with the bypass permission
-		boolean pvp = event.getEntity() instanceof Player && !playerAttacker.equals(event.getEntity());
-		if (isWhitelisted(event.getCause(), event.getWorld(), pvp)) {
+		boolean playerVsPlayer = targetIsPlayer && playerAttacker != null && !playerAttacker.equals(event.getEntity());
+		if (isWhitelisted(event.getCause(), event.getWorld(), playerVsPlayer)) {
 			return;
 		}
 
@@ -133,7 +134,7 @@ public class PvPHandlingListener implements Listener {
 			what = "изменять это";
 
 			/* PVP */
-		}  else if (pvp) {
+		}  else if (playerVsPlayer) {
 			LocalPlayer localAttacker = WorldGuardPlugin.inst().wrapPlayer(playerAttacker);
 			Player defender = (Player) event.getEntity();
 			com.sk89q.worldedit.util.Location attackerLocation = BukkitAdapter.adapt(playerAttacker.getLocation());
@@ -174,7 +175,7 @@ public class PvPHandlingListener implements Listener {
 			what = "драться";
 
 		/* Player damage not caused  by another player */
-		} else if (event.getEntity() instanceof Player) {
+		} else if (targetIsPlayer) {
 			canDamage = event.getRelevantFlags().isEmpty() || query.queryState(target, associable, combine(event)) != State.DENY;
 			what = "наносить урон";
 
