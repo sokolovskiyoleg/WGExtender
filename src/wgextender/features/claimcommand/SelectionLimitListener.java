@@ -7,6 +7,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import wgextender.Config;
 import wgextender.utils.WEUtils;
 
@@ -30,9 +31,11 @@ public class SelectionLimitListener implements Listener {
     );
 
     private final Config config;
+    private final SelectionLimitTracker selectionLimitTracker;
 
     public SelectionLimitListener(Config config) {
         this.config = config;
+        this.selectionLimitTracker = new SelectionLimitTracker(config);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -47,7 +50,7 @@ public class SelectionLimitListener implements Listener {
         if (!isSelectionWand(event.getPlayer())) {
             return;
         }
-        WEUtils.ensureSelectionLimitSelector(event.getPlayer(), config);
+        selectionLimitTracker.scheduleValidation(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -59,13 +62,12 @@ public class SelectionLimitListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        WEUtils.ensureSelectionLimitSelector(player, config);
-        if (isSelectorReplacingCommand(event.getMessage())) {
-            org.bukkit.Bukkit.getScheduler().runTask(
-                    wgextender.WGExtender.getInstance(),
-                    () -> WEUtils.ensureSelectionLimitSelector(player, config)
-            );
-        }
+        selectionLimitTracker.scheduleValidation(player);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        selectionLimitTracker.clear(event.getPlayer());
     }
 
     private boolean isEnabled() {
@@ -78,10 +80,6 @@ public class SelectionLimitListener implements Listener {
 
     private static boolean isSelectionCommand(String rawMessage) {
         return SELECTION_COMMANDS.contains(resolveCommand(rawMessage));
-    }
-
-    private static boolean isSelectorReplacingCommand(String rawMessage) {
-        return resolveCommand(rawMessage).equals("sel");
     }
 
     private static String resolveCommand(String rawMessage) {

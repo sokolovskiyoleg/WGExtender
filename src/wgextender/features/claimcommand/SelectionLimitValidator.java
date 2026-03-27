@@ -2,11 +2,6 @@ package wgextender.features.claimcommand;
 
 import org.bukkit.entity.Player;
 import wgextender.Config;
-import wgextender.WGExtender;
-import wgextender.utils.WEUtils;
-
-import java.util.function.BooleanSupplier;
-import java.util.logging.Level;
 
 public class SelectionLimitValidator {
 
@@ -18,7 +13,7 @@ public class SelectionLimitValidator {
     }
 
     public boolean validateClaim(Player player) {
-        BlockLimits.ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
+        BlockLimits.ProcessedClaimInfo info = getSelectionInfo(player);
         if (info.result() == BlockLimits.Result.ALLOW) {
             return true;
         }
@@ -26,34 +21,11 @@ public class SelectionLimitValidator {
         return false;
     }
 
-    public void validateAndResetSelection(Player player) {
-        validateAndResetSelection(player, () -> WEUtils.clearSelection(player));
+    public BlockLimits.ProcessedClaimInfo getSelectionInfo(Player player) {
+        return blockLimits.processClaimInfo(config, player);
     }
 
-    public boolean validateAndResetSelection(Player player, BooleanSupplier resetAction) {
-        if (!isEnabled()) {
-            return false;
-        }
-        BlockLimits.ProcessedClaimInfo info = blockLimits.processClaimInfo(config, player);
-        if (info.result() == BlockLimits.Result.ALLOW) {
-            return false;
-        }
-        sendLimitDenied(player, info);
-        if (!resetAction.getAsBoolean()) {
-            WGExtender.getInstance().getLogger().log(
-                    Level.WARNING,
-                    "Unable to clear oversized WorldEdit selection for player {0}",
-                    player.getName()
-            );
-        }
-        return true;
-    }
-
-    private boolean isEnabled() {
-        return config.claimBlockLimitsEnabled && config.claimResetOversizedSelection;
-    }
-
-    private void sendLimitDenied(Player player, BlockLimits.ProcessedClaimInfo info) {
+    public void sendLimitDenied(Player player, BlockLimits.ProcessedClaimInfo info) {
         String titleMessage;
         String detailsMessage;
         switch (info.result()) {
