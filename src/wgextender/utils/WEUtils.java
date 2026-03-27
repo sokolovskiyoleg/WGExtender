@@ -24,13 +24,13 @@ import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.regions.RegionSelector;
+import com.sk89q.worldedit.regions.selector.CuboidRegionSelector;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import wgextender.Config;
-import wgextender.features.claimcommand.SelectionLimitRegionSelector;
 
 import java.lang.reflect.Constructor;
+import java.util.Optional;
 
 public class WEUtils {
 
@@ -75,49 +75,27 @@ public class WEUtils {
         return Material.getMaterial(parts.length == 2 ? parts[1] : parts[0]);
     }
 
-    public static void ensureSelectionLimitSelector(Player player, Config config) {
-        LocalSession session = getWorldEditPlugin().getSession(player);
-        com.sk89q.worldedit.world.World weWorld = BukkitAdapter.adapt(player.getWorld());
-        RegionSelector selector = session.getRegionSelector(weWorld);
-        if (selector instanceof SelectionLimitRegionSelector) {
-            return;
-        }
-        session.setRegionSelector(weWorld, new SelectionLimitRegionSelector(config, selector));
-    }
-
-    public static boolean resetSelectionLimitSelector(LocalSession session, com.sk89q.worldedit.world.World weWorld, Config config) {
-        RegionSelector selector = session.getRegionSelector(weWorld);
-        RegionSelector delegate = selector instanceof SelectionLimitRegionSelector selectionLimitSelector
-                ? selectionLimitSelector.unwrap()
-                : selector;
+    public static Optional<RegionSelector> copyRegionSelector(RegionSelector selector) {
         try {
-            RegionSelector freshSelector = createFreshSelector(delegate);
-            session.setRegionSelector(weWorld, new SelectionLimitRegionSelector(config, freshSelector));
-            return true;
+            return Optional.of(createSelectorCopy(selector));
         } catch (ReflectiveOperationException ex) {
-            try {
-                delegate.clear();
-                delegate.learnChanges();
-                return true;
-            } catch (Throwable ignored) { }
-            return false;
+            return Optional.empty();
         }
     }
 
-    private static RegionSelector createFreshSelector(RegionSelector delegate) throws ReflectiveOperationException {
-        Class<? extends RegionSelector> selectorClass = delegate.getClass();
+    private static RegionSelector createSelectorCopy(RegionSelector selector) throws ReflectiveOperationException {
+        Class<? extends RegionSelector> selectorClass = selector.getClass();
 
         try {
             Constructor<? extends RegionSelector> copyConstructor = selectorClass.getConstructor(RegionSelector.class);
-            RegionSelector selector = copyConstructor.newInstance(delegate);
-            selector.clear();
-            return selector;
+            return copyConstructor.newInstance(selector);
         } catch (NoSuchMethodException ignored) { }
 
-        Constructor<? extends RegionSelector> defaultConstructor = selectorClass.getConstructor();
-        RegionSelector selector = defaultConstructor.newInstance();
-        selector.setWorld(delegate.getWorld());
-        return selector;
+        if (selector instanceof CuboidRegionSelector) {
+            return new CuboidRegionSelector(selector);
+        }
+
+        throw new NoSuchMethodException(selectorClass.getName());
     }
 
 }
